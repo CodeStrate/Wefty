@@ -1,9 +1,9 @@
 {
   "name": "wefty",
-  "version": "0.0.1-alpha",
+  "version": "0.1.0-alpha",
   "homepage": "https://github.com/CodeStrate/Wefty",
   "productName": "Wefty",
-  "description": "A local library of your coding agents' sessions and memories \u2014 and when one agent stops (usage limits, outages), pick the work up in another.",
+  "description": "A local library of your coding agents' sessions and memories — and when one agent stops (usage limits, outages), pick the work up in another.",
   "keywords": [
     "coding-agents",
     "claude-code",
@@ -13,7 +13,6 @@
     "handoff",
     "electron"
   ],
-  "iconDescription": "A universal workspace that consolidates chat histories, memories, and contexts from multiple AI agents and platforms into one searchable interface. Users can visualize connections between sessions like a knowledge graph, drag-and-drop memories between conversations, and continue work across different AI harnesses seamlessly. Think of an interconnected web of threads, a bridge connecting islands, or overlapping conversation bubbles linking together.",
   "private": true,
   "type": "module",
   "scripts": {
@@ -81,11 +80,11 @@
   "build": {
     "appId": "app.wefty.desktop",
     "productName": "Wefty",
-    "publish" : {
-      "provider" : "github",
-      "owner" : "CodeStrate",
-      "repo" : "Wefty",
-      "releaseType" : "draft"
+    "publish": {
+      "provider": "github",
+      "owner": "CodeStrate",
+      "repo": "Wefty",
+      "releaseType": "draft"
     },
     "directories": {
       "output": "release",
