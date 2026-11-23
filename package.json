@@ -3,7 +3,7 @@
   "version": "0.1.0-alpha",
   "homepage": "https://github.com/CodeStrate/Wefty",
   "productName": "Wefty",
-  "description": "A local library of your coding agents' sessions and memories — and when one agent stops (usage limits, outages), pick the work up in another.",
+  "description": "See and edit the memory and sessions your coding agents already have, and when one agent stops, let another pick the work up. Local, no repo changes.",
   "keywords": [
     "coding-agents",
     "claude-code",
