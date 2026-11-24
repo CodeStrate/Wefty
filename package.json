@@ -1,6 +1,6 @@
 {
   "name": "wefty",
-  "version": "0.1.0-alpha",
+  "version": "0.1.1-alpha",
   "homepage": "https://github.com/CodeStrate/Wefty",
   "productName": "Wefty",
   "description": "See and edit the memory and sessions your coding agents already have, and when one agent stops, let another pick the work up. Local, no repo changes.",
