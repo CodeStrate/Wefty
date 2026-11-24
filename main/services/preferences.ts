@@ -31,13 +31,6 @@ const DEFAULTS: Preferences = {
   themeMode: "adaptive",
 };
 
-/** Where the Glaze build kept preferences; read once so switching to Electron keeps settings. */
-const GLAZE_PREFERENCES = path.join(
-  app.getPath("appData"),
-  "app.glaze.macos.2kx8bm18-local",
-  "preferences.json",
-);
-
 let cached: Preferences | null = null;
 let saveChain: Promise<void> = Promise.resolve();
 
@@ -87,16 +80,7 @@ export async function getPreferences(): Promise<Preferences> {
     cached = normalize(JSON.parse(await fs.promises.readFile(file, "utf8")));
   } catch (error) {
     const code = isRecord(error) ? error.code : undefined;
-    if (code === "ENOENT") {
-      // First Electron launch: carry over harnesses, project names, and hidden projects.
-      try {
-        cached = normalize(JSON.parse(await fs.promises.readFile(GLAZE_PREFERENCES, "utf8")));
-        logger.info("preferences", `Imported preferences from ${GLAZE_PREFERENCES}`);
-        return cached;
-      } catch {
-        // Nothing to import.
-      }
-    } else {
+    if (code !== "ENOENT") {
       // Keep the unreadable file for inspection instead of silently overwriting it.
       const backup = `${file}.corrupt-${Date.now()}`;
       logger.error("preferences", `Could not read ${file}; moved to ${backup}: ${String(error)}`);
