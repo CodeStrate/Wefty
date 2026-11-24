@@ -56,7 +56,7 @@ function measure(target: string | undefined): Rect | null {
   };
 }
 
-/** Card beside the spotlight: below, above, right, or left — whichever fits first. */
+/** Card beside the spotlight: below, above, right, or left, whichever fits first. */
 function cardPosition(rect: Rect | null, cardHeight: number) {
   const vw = window.innerWidth;
   const vh = window.innerHeight;

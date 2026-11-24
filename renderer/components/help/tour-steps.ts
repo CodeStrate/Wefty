@@ -18,7 +18,7 @@ export interface TourStep {
 export const TOUR_STEPS: TourStep[] = [
   {
     title: "Welcome to Wefty",
-    body: "Wefty gathers what your coding agents leave on disk — session transcripts, memories, and project context files — into one library. Everything stays local. This tour takes about a minute.",
+    body: "Wefty gathers what your coding agents leave on disk (session transcripts, memories, and project context files) into one library. Everything stays local. This tour takes about a minute.",
   },
   {
     target: "sidebar",
@@ -61,12 +61,12 @@ export const TOUR_STEPS: TourStep[] = [
   {
     target: "main",
     title: "Drag and drop",
-    body: `Drag a row, timeline bar, or graph node (past the canvas edge) onto the terminal to type its path or resume command — nothing runs until you press Enter. Drop a session or memory file from ${getOSLabel("fileManager")} onto Wefty to open it.`,
+    body: `Drag a row, timeline bar, or graph node (past the canvas edge) onto the terminal to type its path or resume command. Nothing runs until you press Enter. Drop a session or memory file from ${getOSLabel("fileManager")} onto Wefty to open it.`,
   },
   {
     target: "main",
     title: "Hand a session off",
-    body: "Open a session to read its transcript (searchable, tools can be hidden). Its ⋯ menu builds a Markdown handoff you can copy, drop into the terminal, or use to continue the work in Claude Code or Codex — even if it started in another harness.",
+    body: "Open a session to read its transcript (searchable, tools can be hidden). Its ⋯ menu builds a Markdown handoff you can copy, drop into the terminal, or use to continue the work in Claude Code or Codex, even if it started in another harness.",
   },
   {
     target: "settings",

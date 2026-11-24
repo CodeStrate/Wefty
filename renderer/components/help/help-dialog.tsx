@@ -22,7 +22,7 @@ function Item({ term, children }: { term: string; children: ReactNode }) {
       <Text as="span" variant="strong" color="primary">
         {term}
       </Text>{" "}
-      — {children}
+      - {children}
     </Text>
   );
 }
@@ -89,13 +89,13 @@ export function HelpDialog({ onClose, onStartTour }: HelpDialogProps) {
             hover a message to copy it.
           </Item>
           <Item term="Resume">
-            The terminal button resumes the session in its own folder — Claude Code, Codex, and
+            The terminal button resumes the session in its own folder. Claude Code, Codex, and
             opencode support this. Cursor sessions can only open their folder.
           </Item>
           <Item term="Handoff">
             Builds a Markdown brief: the goal, open threads, the last turns, files touched, and
             related memories. Copy it, insert its path in the terminal, or Continue in Claude Code
-            or Codex to pick the work up in a fresh session — across harnesses too.
+            or Codex to pick the work up in a fresh session, across harnesses too.
           </Item>
         </Section>
 
@@ -112,7 +112,7 @@ export function HelpDialog({ onClose, onStartTour }: HelpDialogProps) {
         <Section title="Drag and drop">
           <Item term="Into the terminal">
             Drag a list row, timeline bar, or graph node (drag it past the canvas edge) onto the
-            terminal. A memory types its path, a session its resume command — nothing runs until you
+            terminal. A memory types its path, a session its resume command. Nothing runs until you
             press Enter. Files from {getOSLabel("fileManager")} type their paths.
           </Item>
           <Item term="Into Wefty">
