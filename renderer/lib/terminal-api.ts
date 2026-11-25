@@ -13,6 +13,11 @@ export function createTerminal(input: {
   return ipc().invoke<CreatedTerminal>("terminal:create", input);
 }
 
+/** Now terminal will ask where a project went and open in it. Null when cancelled. */
+export function resolveFolder(path: string): Promise<string | null> {
+  return ipc().invoke<string | null>("project:resolveFolder", { path });
+}
+
 export function writeTerminal(id: string, data: string): Promise<void> {
   return ipc().invoke<void>("terminal:write", { id, data });
 }

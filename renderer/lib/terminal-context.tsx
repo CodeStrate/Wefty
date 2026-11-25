@@ -9,7 +9,13 @@ import {
 } from "react";
 import { toast } from "@renderer/ui";
 
-import { createTerminal, killTerminal, onTerminalExit, writeTerminal } from "./terminal-api";
+import {
+  createTerminal,
+  killTerminal,
+  onTerminalExit,
+  resolveFolder,
+  writeTerminal,
+} from "./terminal-api";
 import { forgetTerminal, startRecording } from "./terminal-bus";
 
 export interface TerminalTab {
@@ -63,8 +69,14 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
 
   const openTerminal = useCallback(async (options: OpenTerminalOptions = {}) => {
     try {
+      // check for the cwd
+      let cwd = options.cwd ?? null;
+      if (cwd) {
+        cwd = await resolveFolder(cwd);
+        if (!cwd) return null; // The user cancelled the ask prompt.
+      }
       const created = await createTerminal({
-        cwd: options.cwd ?? null,
+        cwd: cwd,
         command: options.command ?? null,
       });
       const title = options.title ?? `${created.shell} - ${created.folder}`;

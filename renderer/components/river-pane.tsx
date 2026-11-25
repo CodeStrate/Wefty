@@ -110,7 +110,7 @@ function clampView(view: Viewport, river: RiverData, width: number): Viewport {
 function visibleDays(view: Viewport, width: number): number[] {
   const end = view.t0 + width / view.k;
   const days: number[] = [];
-  for (let t = startOfDay(view.t0); t < end && days.length < 800; ) {
+  for (let t = startOfDay(view.t0); t < end && days.length < 800;) {
     days.push(t);
     const next = new Date(t);
     next.setDate(next.getDate() + 1); // DST-safe

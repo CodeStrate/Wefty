@@ -7,6 +7,7 @@ import {
   app,
   BrowserWindow,
   clipboard,
+  dialog,
   ipcMain as electronIpcMain,
   Menu,
   nativeTheme,
@@ -15,7 +16,7 @@ import {
   type IpcMainInvokeEvent,
 } from "electron";
 
-export { app, BrowserWindow, clipboard, Menu, nativeTheme, shell, systemPreferences };
+export { app, BrowserWindow, dialog, clipboard, Menu, nativeTheme, shell, systemPreferences };
 
 type Handler = (event: IpcMainInvokeEvent, params: unknown) => unknown;
 

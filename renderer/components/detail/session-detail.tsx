@@ -45,6 +45,7 @@ import {
   TRANSCRIPT_MARKDOWN,
   errorMessage,
 } from "./detail-parts";
+import { resolveFolder } from "@renderer/lib/terminal-api";
 
 const PAGE_SIZE = 80;
 
@@ -193,11 +194,18 @@ export function SessionDetailPane({
   const blocks = toBlocks(ordered.slice(0, visibleCount));
   const remaining = ordered.length - visibleCount;
 
-  // Handoff: a Markdown brief of this session (see main/services/handoff.ts) that any
-  // agent can pick up, including one from a different harness.
-  const withHandoff = async (use: (handoff: HandoffResult) => unknown) => {
+  /** Handoff: a Markdown brief of this session (see main/services/handoff.ts) that any
+  * agent can pick up, including one from a different harness.
+  * With `inProject`, now a missing project folder is located first before building handoffs.
+  * So names aren't mismatched in case a handoff gets made and then the project is renamed/moved */
+
+  const withHandoff = async (use: (handoff: HandoffResult, cwd: string | null) => unknown, 
+  {inProject = false} = {}) => {
     try {
-      await use(await getHandoff(session.id));
+      const cwd = inProject && session.cwd ? await resolveFolder(session.cwd) : session.cwd;
+      if (inProject && session.cwd && !cwd) return; // means user cancelled the renamed or moved? prompt
+
+      await use(await getHandoff(session.id), cwd);
     } catch (error) {
       toast.error(`Couldn't build the handoff: ${errorMessage(error)}`);
     }
@@ -205,14 +213,17 @@ export function SessionDetailPane({
   const copyHandoff = () =>
     void withHandoff((handoff) => copyWithToast(handoff.markdown, "Handoff"));
   const insertHandoffPath = () =>
-    void withHandoff((handoff) => insertText(shellQuote(handoff.path), session.cwd));
+    void withHandoff((handoff, cwd) => insertText(shellQuote(handoff.path), cwd), {
+      inProject: true,
+    });
   const continueIn = (cli: "claude" | "codex", name: string) =>
-    void withHandoff((handoff) =>
+    void withHandoff((handoff, cwd) =>
       openTerminal({
-        cwd: session.cwd,
+        cwd: cwd,
         command: `${cli} ${shellQuote(`Read ${handoff.path} and continue the work it describes.`)}`,
         title: `${name}: ${session.title.slice(0, 18)}`,
       }),
+      { inProject: true }, 
     );
 
   const copyResume = () => {

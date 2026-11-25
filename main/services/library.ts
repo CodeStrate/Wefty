@@ -41,7 +41,7 @@ import {
 } from "./harnesses/opencode.js";
 import { buildHandoff, handoffFileName } from "./handoff.js";
 import { scanProjectMemories } from "./memory-files.js";
-import { isAbsolutePath, TRASH_NAME } from "./platform.js";
+import { isAbsolutePath, isInside, TRASH_NAME } from "./platform.js";
 import { getPreferences, updatePreferences, type Preferences } from "./preferences.js";
 import { HOME, pathExists, statOrNull, writeFileAtomic } from "./util.js";
 
@@ -97,6 +97,38 @@ function projectName(projectPath: string, prefs: Preferences): string {
   return path.basename(projectPath) || projectPath;
 }
 
+function relocate(cwd: string | null, changes: Record<string, string>): string | null {
+  let currentDir = cwd;
+  // a few hops in our directories is enough, the cap would stop a cycle.
+  for (let hop = 0; currentDir && hop < 8; hop++) {
+    const from = Object.keys(changes).find((old) => isInside(currentDir!, old));
+    if (!from) break;
+    currentDir = path.join(changes[from], path.relative(from, currentDir));
+  }
+
+  return currentDir;
+}
+
+// Wrapper for stat.isDirectory()
+export async function isDirectory(target: string): Promise<boolean> {
+  return fs.promises.stat(target).then(
+    (stat) => stat.isDirectory(),
+    () => false,
+  );
+}
+
+/** Find the closest folder above "target" in the file tree that still exists,
+ * it then serves as the starting point for the folder picker.
+ */
+export async function nearestExistingFolder(target: string): Promise<string> {
+  let currentDir = path.dirname(target);
+  while (!(await isDirectory(currentDir)) && path.dirname(currentDir) !== currentDir) {
+    currentDir = path.dirname(currentDir);
+  }
+
+  return currentDir;
+}
+
 async function buildSnapshot(): Promise<LibrarySnapshot> {
   const startedAt = Date.now();
   const errors: ScanError[] = [];
@@ -124,6 +156,12 @@ async function buildSnapshot(): Promise<LibrarySnapshot> {
     ...cursorSessions,
     ...opencode.sessions,
   ];
+
+  const changes = prefs.projectChanges;
+  for (const session of baseSessions) session.cwd = relocate(session.cwd, changes);
+  for (const memory of [...claude.memories, ...opencode.memories, ...codex.memories])
+    memory.cwd = relocate(memory.cwd, changes);
+
   const projectPaths = new Set<string>();
   for (const session of baseSessions)
     if (session.cwd && isVisible(session.cwd)) projectPaths.add(session.cwd);
@@ -349,6 +387,19 @@ export async function renameProject(
   await updatePreferences((draft) => {
     if (name?.trim()) draft.projectNames[projectPath] = name.trim();
     else delete draft.projectNames[projectPath];
+  });
+  return refreshLibrary();
+}
+
+/** Records where a moved or renamed project lives now; its name carries over. */
+export async function relocateProject(from: string, to: string): Promise<LibrarySnapshot> {
+  await updatePreferences((draft) => {
+    draft.projectChanges[from] = to;
+    const name = draft.projectNames[from];
+    if (name) {
+      draft.projectNames[to] = name;
+      delete draft.projectNames[from];
+    }
   });
   return refreshLibrary();
 }

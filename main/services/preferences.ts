@@ -20,6 +20,8 @@ export interface Preferences {
   /** Colour theme preset, and whether it forces light or dark. */
   themeId: string;
   themeMode: ThemeMode;
+  /** Remember project changes (either moved or renamed) */
+  projectChanges: Record<string, string>;
 }
 
 const DEFAULTS: Preferences = {
@@ -29,6 +31,7 @@ const DEFAULTS: Preferences = {
   themeSource: "system",
   themeId: "wefty",
   themeMode: "adaptive",
+  projectChanges: {},
 };
 
 let cached: Preferences | null = null;
@@ -50,6 +53,14 @@ function normalize(raw: unknown): Preferences {
         projectNames[key] = value.trim();
     }
   }
+
+  const projectChanges: Record<string, string> = {};
+  if (isRecord(raw.projectChanges)) {
+    for (const [from, to] of Object.entries(raw.projectChanges)) {
+      if (isAbsolutePath(from) && typeof to === "string" && isAbsolutePath(to) && from !== to)
+        projectChanges[from] = to;
+    }
+  }
   const hiddenProjects = Array.isArray(raw.hiddenProjects)
     ? raw.hiddenProjects.filter(
         (value): value is string => typeof value === "string" && isAbsolutePath(value),
@@ -66,6 +77,7 @@ function normalize(raw: unknown): Preferences {
   return {
     enabledHarnesses: enabled.length > 0 ? [...enabled] : [...DEFAULTS.enabledHarnesses],
     projectNames,
+    projectChanges,
     hiddenProjects: [...new Set(hiddenProjects)],
     themeSource,
     themeId,
