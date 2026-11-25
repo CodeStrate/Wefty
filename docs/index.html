@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wefty</title>
+<meta name="description" content="See and edit the memory and sessions your coding agents already have, and when one agent stops, let another pick the work up. Free, open source, local only.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b0b0d">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" type="image/png" href="img/icon-64.png">
+<link rel="apple-touch-icon" href="img/icon-256.png">
+<meta property="og:title" content="Wefty · every agent session, all in one place">
+<meta property="og:description" content="See and edit the memory and sessions your coding agents already have, and when one agent stops, let another pick the work up.">
+<meta property="og:image" content="https://codestrate.github.io/Wefty/img/og.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<header class="bar">
+  <a class="brand" href="#top"><img src="img/icon-64.png" alt="">Wefty</a>
+  <nav aria-label="Site">
+    <a href="#look">Look</a>
+    <a href="#handoff">Hand off</a>
+    <a href="https://github.com/CodeStrate/Wefty">GitHub</a>
+    <a class="go" href="#download">Download</a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="hero" aria-labelledby="hero-h">
+    <p class="eyebrow">Wefty / memory and sessions for coding agents</p>
+    <h1 id="hero-h">Every agent session.<br>All in one place.</h1>
+    <p class="lede">See and edit what Claude Code, Codex, Cursor, and opencode already keep on disk. When one agent hits its limit, another picks the work up, straight from the transcript.</p>
+    <div class="cta" data-downloads></div>
+    <p class="fine">Free and open source · Apache-2.0 · <span data-version>latest release</span></p>
+  </section>
+
+  <section class="river" aria-label="A live, illustrative timeline of agent sessions">
+    <div class="river-mask"><canvas id="river" aria-hidden="true"></canvas></div>
+    <div class="river-foot">
+      <span class="node start" aria-hidden="true"></span>
+      <span class="legend fine"><span><i class="dot claude"></i>Claude Code</span><span><i class="dot codex"></i>Codex</span><span><i class="dot cursor"></i>Cursor</span><span><i class="dia"></i>memory</span></span>
+      <span class="fine live">Live: watch a lane hit its limit and carry on in another agent.</span>
+    </div>
+  </section>
+
+  <div class="flow" id="flow">
+    <svg class="thread" aria-hidden="true"><path class="base"/><path class="fill"/></svg>
+
+    <section class="step" id="look" style="--i: 0" aria-labelledby="look-h">
+      <span class="node" aria-hidden="true"></span>
+      <p class="eyebrow">01 / Look</p>
+      <div class="step-head">
+        <div>
+          <h2 id="look-h">Three ways to look. One library.</h2>
+          <p class="sub">Wefty reads the transcripts, memory files, and project context your agents leave behind, and lays them out by project and time.</p>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Screens">
+          <button role="tab" aria-selected="true" data-shot="timeline">Timeline</button>
+          <button role="tab" aria-selected="false" data-shot="graph">Graph</button>
+          <button role="tab" aria-selected="false" data-shot="session">Session</button>
+          <button role="tab" aria-selected="false" data-shot="memory">Memory</button>
+        </div>
+      </div>
+      <figure class="shot">
+        <img id="shot-img" src="img/timeline.png" width="1600" height="1000" alt="Wefty's timeline: one lane per project, sessions coloured by agent, memory files as diamonds">
+        <figcaption class="fine" id="shot-cap">Timeline: one lane per project. Bars are sessions, coloured by agent; diamonds are memory files at their last edit.</figcaption>
+      </figure>
+    </section>
+
+    <section class="step" id="handoff" style="--i: 1" aria-labelledby="handoff-h">
+      <span class="node" aria-hidden="true"></span>
+      <p class="eyebrow">02 / Hand off</p>
+      <h2 id="handoff-h">When one agent stops, another picks up.</h2>
+      <div class="split">
+        <ol class="steps">
+          <li><b>Open the session.</b><span>It's already in the library. Wefty watches the agents' folders.</span></li>
+          <li><b>Continue in another agent.</b><span>One click in the session's menu. Claude Code to Codex, or back.</span></li>
+          <li><b>Keep going.</b><span>Wefty writes a Markdown brief from the transcript and starts the next agent in your project, in its built-in terminal.</span></li>
+        </ol>
+        <pre class="brief" aria-label="An example handoff"><span class="h"># Handoff: Proration for mid-cycle upgrades</span>
+<span class="m">- Harness: Claude Code · Branch: main</span>
+<span class="m">- Project: ~/code/billing-service</span>
+
+<span class="h">## Goal (first request)</span>
+<span class="q">&gt; Add proration when a customer upgrades</span>
+<span class="q">&gt; mid billing cycle.</span>
+
+<span class="h">## Open threads</span>
+- Review edge cases
+- Update the docs
+
+<span class="h">## Files touched (3)</span>
+- src/billing/proration.ts
+- src/billing/invoice.ts
+- test/proration.test.ts</pre>
+      </div>
+      <p class="fine note">Your repository is never touched: no handoff file, no commit, no branch. Nothing to prepare before you hit a limit.</p>
+    </section>
+
+    <section class="step" id="facts" style="--i: 2" aria-labelledby="facts-h">
+      <span class="node" aria-hidden="true"></span>
+      <p class="eyebrow">03 / Under the hood</p>
+      <h2 id="facts-h">It reads what's already there.</h2>
+      <div class="chips" aria-label="Supported agents">
+        <span class="chip"><i class="dot claude"></i>Claude Code</span>
+        <span class="chip"><i class="dot codex"></i>Codex</span>
+        <span class="chip"><i class="dot cursor"></i>Cursor</span>
+        <span class="chip"><i class="dot opencode"></i>opencode</span>
+      </div>
+      <div class="facts">
+        <div><b>Edit memory in place</b><span>Fix a wrong line in CLAUDE.md or a memory file, and every agent that reads it gets the fix.</span></div>
+        <div><b>See what touched what</b><span>A graph links sessions to the memories they read or wrote, across projects.</span></div>
+        <div><b>A terminal inside</b><span>Resume any session in its own folder, or drop a path at the prompt. Nothing runs until you press Enter.</span></div>
+        <div><b>Local only</b><span>No account, no telemetry, no sync. It reads and writes your local files and nothing else.</span></div>
+      </div>
+    </section>
+
+    <section class="step end" id="download" aria-labelledby="end-h">
+      <span class="node" aria-hidden="true"></span>
+      <p class="eyebrow">04 / Get it</p>
+      <h2 id="end-h">Keep building when your agent can't.</h2>
+      <p class="sub">For macOS on Apple Silicon, Windows 10 and 11, and Linux (AppImage or .deb). Builds are unsigned while Wefty is in alpha, so your OS will ask once before opening it.</p>
+      <div class="cta" data-downloads></div>
+      <div class="links fine">
+        <a href="https://github.com/CodeStrate/Wefty">Source on GitHub</a>
+        <a href="https://github.com/CodeStrate/Wefty/releases">All releases</a>
+        <a href="https://github.com/CodeStrate/Wefty/issues">Report an issue</a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="foot fine">
+  <span><img src="img/icon-64.png" alt="">Wefty · Apache-2.0 · by CodeStrate</span>
+  <span>Local only. Nothing leaves your machine.</span>
+</footer>
+
+<script src="main.js"></script>
+</body>
+</html>
