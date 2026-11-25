@@ -33,8 +33,18 @@ const TRAFFIC_LIGHTS = 84;
  * command), and files from the file manager (their quoted paths).
  */
 export function TerminalDock() {
-  const { tabs, activeId, open, openTerminal, insertText, closeTab, setActive, setOpen, maximized, setMaximized } =
-    useTerminals();
+  const {
+    tabs,
+    activeId,
+    open,
+    openTerminal,
+    insertText,
+    closeTab,
+    setActive,
+    setOpen,
+    maximized,
+    setMaximized,
+  } = useTerminals();
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [available, setAvailable] = useState(Number.POSITIVE_INFINITY);
   const [dropping, setDropping] = useState(false);
@@ -118,19 +128,21 @@ export function TerminalDock() {
       }}
       onDrop={handleDrop}
     >
-      {maximized ? null : (<div
-        className="absolute inset-y-0 -left-1 z-20 w-2 cursor-col-resize touch-none"
-        onPointerDown={handleResizeStart}
-        onPointerMove={handleResizeMove}
-        onPointerUp={() => (resizeRef.current = null)}
-        aria-hidden
-      />
+      {maximized ? null : (
+        <div
+          className="absolute inset-y-0 -left-1 z-20 w-2 cursor-col-resize touch-none"
+          onPointerDown={handleResizeStart}
+          onPointerMove={handleResizeMove}
+          onPointerUp={() => (resizeRef.current = null)}
+          aria-hidden
+        />
       )}
 
       {/* The header drags the window like the toolbar beside it; tabs and buttons stay clickable. */}
       <div
-      className="drag-region flex shrink-0 items-center gap-1 px-2"
-      style={{ height: HEADER, paddingLeft: maximized && isMac ? TRAFFIC_LIGHTS : undefined }}>
+        className="drag-region flex shrink-0 items-center gap-1 px-2"
+        style={{ height: HEADER, paddingLeft: maximized && isMac ? TRAFFIC_LIGHTS : undefined }}
+      >
         <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
           {tabs.map((tab) => (
             <div

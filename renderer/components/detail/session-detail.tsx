@@ -195,12 +195,14 @@ export function SessionDetailPane({
   const remaining = ordered.length - visibleCount;
 
   /** Handoff: a Markdown brief of this session (see main/services/handoff.ts) that any
-  * agent can pick up, including one from a different harness.
-  * With `inProject`, now a missing project folder is located first before building handoffs.
-  * So names aren't mismatched in case a handoff gets made and then the project is renamed/moved */
+   * agent can pick up, including one from a different harness.
+   * With `inProject`, now a missing project folder is located first before building handoffs.
+   * So names aren't mismatched in case a handoff gets made and then the project is renamed/moved */
 
-  const withHandoff = async (use: (handoff: HandoffResult, cwd: string | null) => unknown, 
-  {inProject = false} = {}) => {
+  const withHandoff = async (
+    use: (handoff: HandoffResult, cwd: string | null) => unknown,
+    { inProject = false } = {},
+  ) => {
     try {
       const cwd = inProject && session.cwd ? await resolveFolder(session.cwd) : session.cwd;
       if (inProject && session.cwd && !cwd) return; // means user cancelled the renamed or moved? prompt
@@ -217,23 +219,23 @@ export function SessionDetailPane({
     void withHandoff((handoff, cwd) => insertText(shellQuote(handoff.path), cwd), {
       inProject: true,
     });
-    
-    const thenCloseDetails = async (opened: Promise<string | null>) => {
-      if (await opened) onClose();
-    }
+
+  const thenCloseDetails = async (opened: Promise<string | null>) => {
+    if (await opened) onClose();
+  };
 
   const continueIn = (cli: "claude" | "codex", name: string) =>
-    void withHandoff((handoff, cwd) =>
-      thenCloseDetails(
-        openTerminal({
-          cwd: cwd,
-          command: `${cli} ${shellQuote(`Read ${handoff.path} and continue the work it describes.`)}`,
-          title: `${name}: ${session.title.slice(0, 18)}`,
-        }),
-      ),
-      { inProject: true }, 
+    void withHandoff(
+      (handoff, cwd) =>
+        thenCloseDetails(
+          openTerminal({
+            cwd: cwd,
+            command: `${cli} ${shellQuote(`Read ${handoff.path} and continue the work it describes.`)}`,
+            title: `${name}: ${session.title.slice(0, 18)}`,
+          }),
+        ),
+      { inProject: true },
     );
-
 
   const copyResume = () => {
     if (session.resumeCommand) void copyWithToast(session.resumeCommand, "Resume command");
@@ -284,7 +286,9 @@ export function SessionDetailPane({
             <DropdownMenuItem
               icon="terminal"
               disabled={!session.cwd}
-              onSelect={() => void thenCloseDetails(openFolderInTerminal(openTerminal, session.cwd))}
+              onSelect={() =>
+                void thenCloseDetails(openFolderInTerminal(openTerminal, session.cwd))
+              }
             >
               Open Folder in Terminal
             </DropdownMenuItem>

@@ -63,12 +63,12 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [maximized, setMaximized] = useState(false);
 
-  /**  effect to handle terminal maximized state, 
+  /**  effect to handle terminal maximized state,
    * hiding or closing the last terminal tab always returns to the normal layout.
-  */
+   */
   useEffect(() => {
-    if(!open || tabs.length === 0) setMaximized(false);
-  }, [open, tabs.length])
+    if (!open || tabs.length === 0) setMaximized(false);
+  }, [open, tabs.length]);
 
   useEffect(() => {
     startRecording();

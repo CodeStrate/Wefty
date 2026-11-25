@@ -55,12 +55,18 @@ type OpenTerminal = (options?: OpenTerminalOptions) => Promise<string | null>;
  * Return a Promise so other panes know terminal opened, allowing us to close details pane when terminal opens
  * giving it ample screen space.
  */
-export function resumeInTerminal(open: OpenTerminal, session: SessionSummary): Promise<string | null> {
+export function resumeInTerminal(
+  open: OpenTerminal,
+  session: SessionSummary,
+): Promise<string | null> {
   const spec = resumeSpec(session);
   if (!spec) return Promise.resolve(null);
   return open({ cwd: spec.cwd, command: spec.command, title: session.title.slice(0, 24) });
 }
 
-export function openFolderInTerminal(open: OpenTerminal, cwd: string | null): Promise<string | null> {
+export function openFolderInTerminal(
+  open: OpenTerminal,
+  cwd: string | null,
+): Promise<string | null> {
   return cwd ? open({ cwd }) : Promise.resolve(null);
 }
