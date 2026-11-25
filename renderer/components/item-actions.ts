@@ -51,14 +51,16 @@ export function dragProps(item: LibraryItem) {
 
 type OpenTerminal = (options?: OpenTerminalOptions) => Promise<string | null>;
 
-/** Resume a session in an embedded terminal. Returns false when its harness can't resume. */
-export function resumeInTerminal(open: OpenTerminal, session: SessionSummary): boolean {
+/** Resume a session in an embedded terminal. Returns false when its harness can't resume.
+ * Return a Promise so other panes know terminal opened, allowing us to close details pane when terminal opens
+ * giving it ample screen space.
+ */
+export function resumeInTerminal(open: OpenTerminal, session: SessionSummary): Promise<string | null> {
   const spec = resumeSpec(session);
-  if (!spec) return false;
-  void open({ cwd: spec.cwd, command: spec.command, title: session.title.slice(0, 24) });
-  return true;
+  if (!spec) return Promise.resolve(null);
+  return open({ cwd: spec.cwd, command: spec.command, title: session.title.slice(0, 24) });
 }
 
-export function openFolderInTerminal(open: OpenTerminal, cwd: string | null): void {
-  if (cwd) void open({ cwd });
+export function openFolderInTerminal(open: OpenTerminal, cwd: string | null): Promise<string | null> {
+  return cwd ? open({ cwd }) : Promise.resolve(null);
 }

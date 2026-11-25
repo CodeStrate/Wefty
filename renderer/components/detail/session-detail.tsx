@@ -210,21 +210,30 @@ export function SessionDetailPane({
       toast.error(`Couldn't build the handoff: ${errorMessage(error)}`);
     }
   };
+
   const copyHandoff = () =>
     void withHandoff((handoff) => copyWithToast(handoff.markdown, "Handoff"));
   const insertHandoffPath = () =>
     void withHandoff((handoff, cwd) => insertText(shellQuote(handoff.path), cwd), {
       inProject: true,
     });
+    
+    const thenCloseDetails = async (opened: Promise<string | null>) => {
+      if (await opened) onClose();
+    }
+
   const continueIn = (cli: "claude" | "codex", name: string) =>
     void withHandoff((handoff, cwd) =>
-      openTerminal({
-        cwd: cwd,
-        command: `${cli} ${shellQuote(`Read ${handoff.path} and continue the work it describes.`)}`,
-        title: `${name}: ${session.title.slice(0, 18)}`,
-      }),
+      thenCloseDetails(
+        openTerminal({
+          cwd: cwd,
+          command: `${cli} ${shellQuote(`Read ${handoff.path} and continue the work it describes.`)}`,
+          title: `${name}: ${session.title.slice(0, 18)}`,
+        }),
+      ),
       { inProject: true }, 
     );
+
 
   const copyResume = () => {
     if (session.resumeCommand) void copyWithToast(session.resumeCommand, "Resume command");
@@ -238,7 +247,7 @@ export function SessionDetailPane({
             aria-label="Resume in terminal"
             title={canResume ? "Resume in terminal" : "This harness can't resume sessions"}
             disabled={!canResume}
-            onClick={() => resumeInTerminal(openTerminal, session)}
+            onClick={() => void thenCloseDetails(resumeInTerminal(openTerminal, session))}
           >
             <SquareTerminal />
           </Button>
@@ -275,7 +284,7 @@ export function SessionDetailPane({
             <DropdownMenuItem
               icon="terminal"
               disabled={!session.cwd}
-              onSelect={() => openFolderInTerminal(openTerminal, session.cwd)}
+              onSelect={() => void thenCloseDetails(openFolderInTerminal(openTerminal, session.cwd))}
             >
               Open Folder in Terminal
             </DropdownMenuItem>
