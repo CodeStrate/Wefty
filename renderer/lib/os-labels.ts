@@ -3,8 +3,8 @@
  * "Mac" or "Finder" on a PC. window.wefty is set by the preload before any page script runs.
  */
 
-const os: string = window.wefty.platform;
-const isMac = os === "darwin";
+export const os: string = window.wefty.platform;
+export const isMac = os === "darwin";
 export const MOD_KEY = isMac ? "⌘" : "Ctrl";
 
 function comboKeys(...keys: string[]): string {

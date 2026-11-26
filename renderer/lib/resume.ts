@@ -26,13 +26,13 @@ export function resumeSpec(session: SessionSummary): ResumeSpec | null {
   }
 }
 
-/** Single-quote a path for pasting into a POSIX shell, only when it needs it. 
+/** Single-quote a path for pasting into a POSIX shell, only when it needs it.
  * On Windows Powershell, it escapes a quote in single quotes by doubling it. ("''")
- * 
-*/
+ *
+ */
 export function shellQuote(value: string): string {
   if (/^[\w@%+=:,./-]+$/.test(value)) return value;
   return window.wefty.platform === "win32"
-  ? `'${value.replace(/'/g, "''")}'`
-  : `'${value.replace(/'/g, `'\\''`)}'`
+    ? `'${value.replace(/'/g, "''")}'`
+    : `'${value.replace(/'/g, `'\\''`)}'`;
 }

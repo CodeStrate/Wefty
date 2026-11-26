@@ -1,12 +1,16 @@
-import { app, clipboard, ipcMain, shell } from "../electron/runtime.js";
+import * as path from "path";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, shell } from "../electron/runtime.js";
 
 import {
   getHandoff,
   getLibrary,
   getMemoryDetail,
   getSessionDetail,
+  isDirectory,
   isKnownPath,
   matchPath,
+  nearestExistingFolder,
+  relocateProject,
   renameProject,
   saveMemory,
   setHarnessEnabled,
@@ -95,6 +99,47 @@ export function registerLibraryHandlers(): void {
       );
     }
     return renameProject(projectPath, name);
+  });
+
+  /** Handle project location changes, letting the user choose the project location. */
+  ipcMain.handle("project:resolveFolder", async (event, params: unknown) => {
+    const folder = requireProjectPath(params, "project:resolveFolder");
+    if (await isDirectory(folder)) return folder;
+
+    const window = BrowserWindow.fromWebContents(event.sender);
+    const folderName = path.basename(folder);
+    const askPrompt = {
+      type: "question" as const,
+      buttons: ["Choose Folder…", "Cancel"],
+      defaultId: 0,
+      cancelId: 1,
+      message: `Project ${folderName} isn't where it used to be`,
+      detail: `Wefty expected it at ${folder}. If it was either moved or renamed, choose where it is now. Wefty will remember the new location for this project.`,
+    };
+
+    const { response } = window
+      ? await dialog.showMessageBox(window, askPrompt)
+      : await dialog.showMessageBox(askPrompt);
+
+    if (response !== 0) return null;
+
+    // pick a new location
+
+    const pickPrompt = {
+      title: `Where is the project now? (${folderName})`,
+      buttonLabel: "Use This Folder",
+      defaultPath: await nearestExistingFolder(folder),
+      properties: ["openDirectory" as const],
+    };
+
+    const pickResult = window
+      ? await dialog.showOpenDialog(window, pickPrompt)
+      : await dialog.showOpenDialog(pickPrompt);
+
+    const chosen = pickResult.canceled ? undefined : pickResult.filePaths[0];
+    if (!chosen) return null;
+    await relocateProject(folder, chosen);
+    return chosen;
   });
 
   ipcMain.handle("project:setHidden", async (_event, params: unknown) => {

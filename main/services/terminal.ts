@@ -70,15 +70,20 @@ function clampSize(value: number | undefined, fallback: number): number {
   return Number.isInteger(value) && value! > 0 && value! < 1000 ? value! : fallback;
 }
 
+/**
+ * No folder means a plain terminal in the home folder. A named folder (a session's project,
+ * for resume or handoff) must still exist, discourage running an agent in the wrong directory.
+ */
 function resolveCwd(cwd: string | null | undefined): string {
-  if (cwd) {
-    try {
-      if (fs.statSync(cwd).isDirectory()) return cwd;
-    } catch {
-      // Fall through: the project folder may have been moved or deleted.
-    }
+  if (!cwd) return HOME;
+  let isDirectory = false;
+  try {
+    isDirectory = fs.statSync(cwd).isDirectory();
+  } catch {
+    // Renamed/Moved or deleted.
   }
-  return HOME;
+  if (!isDirectory) throw new Error(`The project folder isn't there anymore: ${cwd}`);
+  return cwd;
 }
 
 function flush(id: string, session: Session): void {

@@ -9,7 +9,13 @@ import {
 } from "react";
 import { toast } from "@renderer/ui";
 
-import { createTerminal, killTerminal, onTerminalExit, writeTerminal } from "./terminal-api";
+import {
+  createTerminal,
+  killTerminal,
+  onTerminalExit,
+  resolveFolder,
+  writeTerminal,
+} from "./terminal-api";
 import { forgetTerminal, startRecording } from "./terminal-bus";
 
 export interface TerminalTab {
@@ -41,6 +47,8 @@ interface TerminalContextValue {
   setActive: (id: string) => void;
   setOpen: (open: boolean) => void;
   toggle: () => void;
+  maximized: boolean;
+  setMaximized: (maximized: boolean) => void;
 }
 
 const TerminalContext = createContext<TerminalContextValue | null>(null);
@@ -53,6 +61,14 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
   const [tabs, setTabs] = useState<TerminalTab[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [maximized, setMaximized] = useState(false);
+
+  /**  effect to handle terminal maximized state,
+   * hiding or closing the last terminal tab always returns to the normal layout.
+   */
+  useEffect(() => {
+    if (!open || tabs.length === 0) setMaximized(false);
+  }, [open, tabs.length]);
 
   useEffect(() => {
     startRecording();
@@ -63,8 +79,14 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
 
   const openTerminal = useCallback(async (options: OpenTerminalOptions = {}) => {
     try {
+      // check for the cwd
+      let cwd = options.cwd ?? null;
+      if (cwd) {
+        cwd = await resolveFolder(cwd);
+        if (!cwd) return null; // The user cancelled the ask prompt.
+      }
       const created = await createTerminal({
-        cwd: options.cwd ?? null,
+        cwd: cwd,
         command: options.command ?? null,
       });
       const title = options.title ?? `${created.shell} - ${created.folder}`;
@@ -127,8 +149,10 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
       setActive: setActiveId,
       setOpen,
       toggle,
+      maximized,
+      setMaximized,
     }),
-    [tabs, activeId, open, openTerminal, insertText, closeTab, toggle],
+    [tabs, activeId, open, openTerminal, insertText, closeTab, toggle, maximized, setMaximized],
   );
 
   return <TerminalContext.Provider value={value}>{children}</TerminalContext.Provider>;

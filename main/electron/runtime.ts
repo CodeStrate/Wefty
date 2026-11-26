@@ -1,12 +1,13 @@
 /**
  * The Electron surface the rest of the backend uses. Keeping it in one module means
  * handlers and services import from here instead of from "electron" directly, and the
- * two helpers Glaze used to provide (`ipcMain.broadcast`, `logger`) live in one place.
+ * two helpers Electron lacks (`ipcMain.broadcast`, `logger`) live in one place.
  */
 import {
   app,
   BrowserWindow,
   clipboard,
+  dialog,
   ipcMain as electronIpcMain,
   Menu,
   nativeTheme,
@@ -15,7 +16,7 @@ import {
   type IpcMainInvokeEvent,
 } from "electron";
 
-export { app, BrowserWindow, clipboard, Menu, nativeTheme, shell, systemPreferences };
+export { app, BrowserWindow, dialog, clipboard, Menu, nativeTheme, shell, systemPreferences };
 
 type Handler = (event: IpcMainInvokeEvent, params: unknown) => unknown;
 

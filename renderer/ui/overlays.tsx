@@ -34,7 +34,7 @@ export { toast } from "sonner";
 
 // --- Menus ------------------------------------------------------------------
 
-/** Menu items name their icon (the SF Symbol names the Glaze build used); mapped to Lucide here. */
+/** Menu items name their icon with SF Symbol names; mapped to Lucide here. */
 const MENU_ICONS: Record<string, LucideIcon> = {
   "arrow.right.circle": CircleArrowRight,
   "doc.on.clipboard": ClipboardCopy,

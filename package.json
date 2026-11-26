@@ -1,6 +1,6 @@
 {
   "name": "wefty",
-  "version": "0.1.1-alpha",
+  "version": "0.1.2-alpha",
   "homepage": "https://github.com/CodeStrate/Wefty",
   "productName": "Wefty",
   "description": "See and edit the memory and sessions your coding agents already have, and when one agent stops, let another pick the work up. Local, no repo changes.",
@@ -59,7 +59,7 @@
     "eslint-plugin-import": "^2.31.0",
     "globals": "^17.3.0",
     "lucide-react": "^0.542.0",
-    "oxfmt": "^0.26.0",
+    "oxfmt": "^0.80.0",
     "radix-ui": "^1.4.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

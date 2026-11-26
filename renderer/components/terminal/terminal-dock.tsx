@@ -5,14 +5,15 @@ import {
   type DragEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { Plus, X } from "lucide-react";
-import { Button, Text } from "@renderer/ui";
+import { Maximize2, Minimize2, Plus, X } from "lucide-react";
+import { Button, cn, Text } from "@renderer/ui";
 
 import { getPathForFile } from "../../lib/bridge";
 import { DROP_TEXT_EVENT } from "../../lib/item-drag";
 import { shellQuote } from "../../lib/resume";
 import { useTerminals } from "../../lib/terminal-context";
 import { TerminalView } from "./terminal-view";
+import { isMac } from "@renderer/lib/os-labels";
 
 const MIN_WIDTH = 320;
 const DEFAULT_WIDTH = 520;
@@ -22,6 +23,8 @@ const MAIN_MIN_WIDTH = 460;
 const SQUEEZED_WIDTH = 240;
 /** Matches the primary toolbar height so the panel lines up with it. */
 const HEADER = 52;
+/** MacOS traffic lights constant, Room for the window buttons when terminal covers the window */
+const TRAFFIC_LIGHTS = 84;
 
 /**
  * Right-side terminal panel. Tabs stay mounted while hidden so scrollback survives
@@ -30,8 +33,18 @@ const HEADER = 52;
  * command), and files from the file manager (their quoted paths).
  */
 export function TerminalDock() {
-  const { tabs, activeId, open, openTerminal, insertText, closeTab, setActive, setOpen } =
-    useTerminals();
+  const {
+    tabs,
+    activeId,
+    open,
+    openTerminal,
+    insertText,
+    closeTab,
+    setActive,
+    setOpen,
+    maximized,
+    setMaximized,
+  } = useTerminals();
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [available, setAvailable] = useState(Number.POSITIVE_INFINITY);
   const [dropping, setDropping] = useState(false);
@@ -103,26 +116,33 @@ export function TerminalDock() {
       data-drop-target="terminal"
       // no-drag: Electron's window-drag areas ignore stacking, so a toolbar drag region next to
       // (or stale under) this panel would otherwise swallow clicks on its tabs and buttons.
-      className={`group relative flex h-full shrink-0 flex-col border-l border-separator bg-terminal [-webkit-app-region:no-drag] ${
-        open ? "" : "hidden"
-      }`}
-      style={{ width: shownWidth }}
+      className={cn(
+        "group relative flex h-full shrink-0 flex-col border-l border-separator bg-terminal [-webkit-app-region:no-drag]",
+        !open && "hidden",
+        maximized && "fixed inset-0 z-40 border-l-0",
+      )}
+      style={maximized ? undefined : { width: shownWidth }}
       onDragOver={handleDragOver}
       onDragLeave={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropping(false);
       }}
       onDrop={handleDrop}
     >
-      <div
-        className="absolute inset-y-0 -left-1 z-20 w-2 cursor-col-resize touch-none"
-        onPointerDown={handleResizeStart}
-        onPointerMove={handleResizeMove}
-        onPointerUp={() => (resizeRef.current = null)}
-        aria-hidden
-      />
+      {maximized ? null : (
+        <div
+          className="absolute inset-y-0 -left-1 z-20 w-2 cursor-col-resize touch-none"
+          onPointerDown={handleResizeStart}
+          onPointerMove={handleResizeMove}
+          onPointerUp={() => (resizeRef.current = null)}
+          aria-hidden
+        />
+      )}
 
       {/* The header drags the window like the toolbar beside it; tabs and buttons stay clickable. */}
-      <div className="drag-region flex shrink-0 items-center gap-1 px-2" style={{ height: HEADER }}>
+      <div
+        className="drag-region flex shrink-0 items-center gap-1 px-2"
+        style={{ height: HEADER, paddingLeft: maximized && isMac ? TRAFFIC_LIGHTS : undefined }}
+      >
         <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
           {tabs.map((tab) => (
             <div
@@ -164,6 +184,18 @@ export function TerminalDock() {
         >
           <Plus />
         </Button>
+
+        <Button
+          variant="transparent"
+          size="small"
+          iconOnly
+          aria-label={maximized ? "Restore terminal" : "Maximize terminal"}
+          title={maximized ? "Restore terminal" : "Maximize terminal"}
+          onClick={() => setMaximized(!maximized)}
+        >
+          {maximized ? <Minimize2 /> : <Maximize2 />}
+        </Button>
+
         <Button
           variant="transparent"
           size="small"
