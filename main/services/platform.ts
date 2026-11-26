@@ -7,6 +7,7 @@ import * as os from "os";
 import * as path from "path";
 
 export const HOME = os.homedir();
+export const ANTIGRAVITY_CLI_DIR = path.join(HOME, ".gemini", "antigravity-cli");
 
 function onPath(name: string): boolean {
   // checks if a certain name (executable generally) is on PATH. (Win/Mac/Linux)
@@ -32,7 +33,7 @@ function userConfigRoot(): string {
 /** Cursor's VS Code-style user folder (holds `globalStorage/state.vscdb`). */
 export const CURSOR_USER_DIR = path.join(userConfigRoot(), "Cursor", "User");
 
-/** opencode follows XDG on every platform. */
+/** Opencode follows XDG on every platform. */
 export const XDG_DATA_HOME = process.env.XDG_DATA_HOME || path.join(HOME, ".local", "share");
 
 /** The sqlite3 CLI ships with macOS; elsewhere it must be on PATH. */

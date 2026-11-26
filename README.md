@@ -17,13 +17,13 @@
 
 Wefty does three things:
 
-1. **It shows you what your agents already know.** Claude Code, Codex, Cursor, and opencode keep session transcripts, memory files, and project context on disk. Wefty puts them in one place, where you can read every session, edit any memory, and see on a graph which sessions touched which memories. Browse everything on a timeline or as a searchable list.
+1. **It shows you what your agents already know.** Claude Code, Codex, Cursor, Opencode, and Antigravity keep session transcripts, memory files, and project context on disk. Wefty puts them in one place, where you can read every session, edit any memory, and see on a graph which sessions touched which memories. Browse everything on a timeline or as a searchable list.
 2. **It keeps your work moving when an agent can't.** Hit a usage limit, or the provider is down? Open the session in Wefty and continue it in another agent. The handoff is built from the transcript that's already on disk. Nothing to prepare in your project, no `HANDOFF.md` to keep up to date, no work-in-progress commit.
 3. **It keeps everything in one window.** Wefty has a built-in terminal (the same stack VS Code uses: node-pty + xterm.js), so you don't need a terminal open next to it. Open the terminal pane, resume or hand off a session, and keep vibing.
 
 It isn't an agent and it isn't a sync service. It reads and writes **your local files**, runs your shell in its terminal, and does nothing else.
 
-> **Alpha.** Builds are unsigned and Cursor and opencode support is untested. Expect rough edges, and [issues](https://github.com/CodeStrate/Wefty/issues) are very welcome.
+> **Alpha.** Builds are unsigned and Cursor, Opencode, and Antigravity support is untested. Expect rough edges, and [issues](https://github.com/CodeStrate/Wefty/issues) are very welcome.
 
 [Download](#download) · [Features](#features) · [Harnesses](#supported-harnesses) · [Build from Source](#build-from-source) · [How It Works](#how-it-works) · [Privacy](#privacy) · [Stack](#stack) · [Development](#development) · [Contributing](#contributing) · [Roadmap](#roadmap)
 
@@ -77,8 +77,8 @@ The tour starts on first launch; replay it any time from **Help → Show Tour**.
 | Search | Filters the list, fades non-matches in the timeline and graph, and snaps the view to what it found |
 | Transcript reader | Grouped tool calls, search inside the conversation, hide tools, newest-first, copy any message |
 | Memory editor | Preview / edit with ⌘S / Ctrl+S; follows links between memory files |
-| Terminal | Tabbed login shells in a side panel, titled by shell and folder (`zsh - my-project`). Resume Claude Code, Codex, and opencode sessions in their own folder |
-| Handoff | A no-AI Markdown brief of a session: goal, open threads, last turns, files touched, related memories. Copy it, insert its path in the terminal, or **Continue in Claude Code / Codex** |
+| Terminal | Tabbed login shells in a side panel, titled by shell and folder (`zsh - my-project`). Resume Claude Code, Codex, Opencode, and Antigravity sessions in their own folder |
+| Handoff | A no-AI Markdown brief of a session: goal, open threads, last turns, files touched, related memories. Copy it, insert its path in the terminal, or **Continue In** Claude Code, Codex, Opencode, or Antigravity |
 | Drag and drop | Drag rows, timeline bars, or graph nodes onto the terminal to type a path or resume command (nothing runs until Enter). Drop session or memory files from your file manager to open them |
 | Themes | Wefty (translucent, follows Light/Dark, uses your system accent), Graphite, Midnight, Nord, Dracula, Solarized Dark, Paper, and GitHub Light. Each recolours the whole app, terminal palette and harness colours included |
 | Settings | Theme gallery, Light/Dark/Auto, which harnesses are scanned, and hidden projects. Open it from the gear in the sidebar or ⌘, / Ctrl+, |
@@ -93,9 +93,10 @@ The tour starts on first launch; replay it any time from **Help → Show Tour**.
 | Claude Code (default) | `~/.claude/projects/*/*.jsonl` | `CLAUDE.md`, `CLAUDE.local.md`, `.claude/CLAUDE.md`, project `memory/*.md` | Tested |
 | Codex CLI | `~/.codex/sessions/**/rollout-*.jsonl` | `AGENTS.md`, generated memories | Sessions tested; DB memories untested |
 | Cursor | `state.vscdb` composer history | `.cursorrules`, `.cursor/rules`, `AGENTS.md` | Untested |
-| opencode | `~/.local/share/opencode/storage` | `AGENTS.md` | Untested |
+| Opencode | `~/.local/share/opencode/storage` | `AGENTS.md` | Untested |
+| Antigravity CLI | `~/.gemini/antigravity-cli` conversation index | none yet | Untested |
 
-Only Claude Code is scanned by default. Add others from the **+** next to *Harnesses* in the sidebar, or in Settings. Reports from Cursor and opencode users are very welcome.
+Only Claude Code is scanned by default. Add others from the **+** next to *Harnesses* in the sidebar, or in Settings. Reports from Cursor, Opencode, and Antigravity users are very welcome.
 
 ## Build from Source
 
@@ -142,12 +143,13 @@ Each tab is a login shell (`$SHELL` on macOS/Linux, `%COMSPEC%` on Windows) in a
 |---|---|
 | Claude Code | `claude --resume <id>` |
 | Codex | `codex resume <id>` |
-| opencode | `opencode --session <id>` |
+| Opencode | `opencode --session <id>` |
+| Antigravity | `agy --conversation <id>` |
 | Cursor | No CLI resume; opens a terminal in the folder |
 
 ### Handoff
 
-`main/services/handoff.ts` turns a transcript into a short Markdown brief: the first request, lines from the last turns that read like unfinished work, the last 12 turns, files touched, and related memory files. It's written to the app's data folder (`handoffs/<session>.md`), so any agent can be pointed at it by path. **Continue in Claude Code / Codex** opens a terminal in the project and starts that CLI with *"Read <handoff> and continue the work it describes."*
+`main/services/handoff.ts` turns a transcript into a short Markdown brief: the first request, lines from the last turns that read like unfinished work, the last 12 turns, files touched, and related memory files. It's written to the app's data folder (`handoffs/<session>.md`), so any agent can be pointed at it by path. **Continue In** (Claude Code, Codex, Opencode, or Antigravity) opens a terminal in the project and starts that CLI with *"Read <handoff> and continue the work it describes."*
 
 ### Themes
 

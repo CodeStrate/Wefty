@@ -41,15 +41,17 @@ import {
 } from "./harnesses/opencode.js";
 import { buildHandoff, handoffFileName } from "./handoff.js";
 import { scanProjectMemories } from "./memory-files.js";
-import { isAbsolutePath, isInside, TRASH_NAME } from "./platform.js";
+import { ANTIGRAVITY_CLI_DIR, isAbsolutePath, isInside, TRASH_NAME } from "./platform.js";
 import { getPreferences, updatePreferences, type Preferences } from "./preferences.js";
 import { HOME, pathExists, statOrNull, writeFileAtomic } from "./util.js";
+import { readAntigravitySession, scanAntigravity } from "./harnesses/antigravity.js";
 
 const HARNESS_NAMES: Record<HarnessId, string> = {
   "claude-code": "Claude Code",
   codex: "Codex",
   cursor: "Cursor",
-  opencode: "opencode",
+  opencode: "Opencode",
+  antigravity: "Antigravity",
 };
 
 const MAX_MEMORY_READ_BYTES = 2 * 1024 * 1024;
@@ -75,18 +77,20 @@ async function settle<T>(
 }
 
 async function detectAvailability(): Promise<Record<HarnessId, boolean>> {
-  const [claude, codex, cursor, opencodeData, opencodeConfig] = await Promise.all([
+  const [claude, codex, cursor, opencodeData, opencodeConfig, antigravityData] = await Promise.all([
     pathExists(CLAUDE_ROOT),
     pathExists(CODEX_ROOT),
     pathExists(CURSOR_USER_DIR),
     pathExists(opencodeStorageDir()),
     pathExists(OPENCODE_CONFIG_DIR),
+    pathExists(ANTIGRAVITY_CLI_DIR),
   ]);
   return {
     "claude-code": claude,
     codex,
     cursor,
     opencode: opencodeData || opencodeConfig,
+    antigravity: antigravityData,
   };
 }
 
@@ -142,19 +146,22 @@ async function buildSnapshot(): Promise<LibrarySnapshot> {
   const scanIfEnabled = <T>(harness: HarnessId, fallback: T, task: () => Promise<T>): Promise<T> =>
     enabled.has(harness) ? settle(harness, errors, fallback, task) : Promise.resolve(fallback);
 
-  const [claude, codex, cursorSessions, opencode, available] = await Promise.all([
-    scanIfEnabled("claude-code", emptyScan, scanClaudeCode),
-    scanIfEnabled("codex", emptyScan, scanCodex),
-    scanIfEnabled("cursor", [] as SessionSummary[], scanCursor),
-    scanIfEnabled("opencode", emptyScan, scanOpencode),
-    detectAvailability(),
-  ]);
+  const [claude, codex, cursorSessions, opencode, antigravitySessions, available] =
+    await Promise.all([
+      scanIfEnabled("claude-code", emptyScan, scanClaudeCode),
+      scanIfEnabled("codex", emptyScan, scanCodex),
+      scanIfEnabled("cursor", [] as SessionSummary[], scanCursor),
+      scanIfEnabled("opencode", emptyScan, scanOpencode),
+      scanIfEnabled("antigravity", [] as SessionSummary[], scanAntigravity),
+      detectAvailability(),
+    ]);
 
   const baseSessions = [
     ...claude.sessions,
     ...codex.sessions,
     ...cursorSessions,
     ...opencode.sessions,
+    ...antigravitySessions,
   ];
 
   const changes = prefs.projectChanges;
@@ -310,6 +317,9 @@ export async function getSessionDetail(id: string): Promise<SessionDetail> {
     case "opencode":
       entries = await readOpencodeSession(session);
       break;
+    case "antigravity":
+      entries = await readAntigravitySession(session);
+      break;
   }
   return {
     session,
@@ -419,7 +429,7 @@ export async function setProjectHidden(
 
 /**
  * Files that make up one item. Only harnesses that keep each session in its own file can trash
- * sessions; Cursor and opencode share storage across sessions.
+ * sessions; Cursor, Opencode, and Antigravity share storage across sessions.
  */
 async function trashPathsFor(item: SessionSummary | MemorySummary): Promise<string[]> {
   if (item.kind === "memory") {
@@ -554,6 +564,13 @@ function watchTargets(enabled: HarnessId[]): { dir: string; recursive: boolean }
     targets.push(...CODEX_SESSION_DIRS.map((dir) => ({ dir, recursive: true })));
   if (enabled.includes("opencode")) {
     targets.push({ dir: path.join(opencodeStorageDir(), "session"), recursive: true });
+  }
+  if (enabled.includes("antigravity")) {
+    // The index and history sit in the root; each conversation's step log lives under brain/.
+    targets.push(
+      { dir: ANTIGRAVITY_CLI_DIR, recursive: false },
+      { dir: path.join(ANTIGRAVITY_CLI_DIR, "brain"), recursive: true },
+    );
   }
   return targets;
 }

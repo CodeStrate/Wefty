@@ -10,9 +10,15 @@ export interface CreatedTerminal {
   folder: string;
 }
 
-export type HarnessId = "claude-code" | "codex" | "cursor" | "opencode";
+export type HarnessId = "claude-code" | "codex" | "cursor" | "opencode" | "antigravity";
 
-export const HARNESS_IDS: readonly HarnessId[] = ["claude-code", "codex", "cursor", "opencode"];
+export const HARNESS_IDS: readonly HarnessId[] = [
+  "claude-code",
+  "codex",
+  "cursor",
+  "opencode",
+  "antigravity",
+];
 
 export interface HarnessInfo {
   id: HarnessId;
@@ -102,6 +108,8 @@ export interface TranscriptEntry {
   role: "user" | "assistant" | "tool" | "system";
   text: string;
   toolName?: string;
+  result?: string;
+  isError?: boolean;
 }
 
 export interface SessionDetail {

@@ -21,6 +21,8 @@ export function resumeSpec(session: SessionSummary): ResumeSpec | null {
       return { cwd: session.cwd, command: `codex resume ${session.nativeId}` };
     case "opencode":
       return { cwd: session.cwd, command: `opencode --session ${session.nativeId}` };
+    case "antigravity":
+      return { cwd: session.cwd, command: `agy --conversation ${session.nativeId}` };
     default:
       return null;
   }

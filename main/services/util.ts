@@ -7,6 +7,7 @@ import { promisify } from "util";
 import { HOME, SQLITE_BINARY, isAbsolutePath } from "./platform.js";
 
 export { HOME };
+import { pathToFileURL } from "url";
 
 const execFileAsync = promisify(execFile);
 
@@ -96,6 +97,20 @@ export async function querySqlite(dbPath: string, sql: string): Promise<Record<s
   if (!trimmed) return [];
   const parsed: unknown = JSON.parse(trimmed);
   return Array.isArray(parsed) ? parsed.filter(isRecord) : [];
+}
+/**
+ * querySqlite for a database another app keeps open, where a plain read-only open can fail.
+ * Falls back to an immutable snapshot, which can miss writes that the app hasn't flushed yet.
+ */
+export async function querySqliteLive(
+  dbPath: string,
+  sql: string,
+): Promise<Record<string, unknown>[]> {
+  try {
+    return await querySqlite(dbPath, sql);
+  } catch {
+    return querySqlite(`${pathToFileURL(dbPath).href}?immutable=1`, sql);
+  }
 }
 
 const SAFE_ID = /^[A-Za-z0-9_-]+$/;
