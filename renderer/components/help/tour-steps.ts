@@ -56,7 +56,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     target: "terminal",
     title: "Built-in terminal",
-    body: "Opens a shell beside your library. Sessions can resume here in their own folder: Claude Code, Codex, and opencode resume natively.",
+    body: "Opens a shell beside your library. Sessions can resume here in their own folder: Claude Code, Codex, Opencode, and Antigravity resume natively.",
   },
   {
     target: "main",
@@ -66,7 +66,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     target: "main",
     title: "Hand a session off",
-    body: "Open a session to read its transcript (searchable, tools can be hidden). Its ⋯ menu builds a Markdown handoff you can copy, drop into the terminal, or use to continue the work in Claude Code or Codex, even if it started in another harness.",
+    body: "Open a session to read its transcript (searchable, tools can be hidden). Its ⋯ menu builds a Markdown handoff you can copy, drop into the terminal, or use to continue the work in Claude Code, Codex, Opencode, or Antigravity, even if it started in another harness.",
   },
   {
     target: "settings",

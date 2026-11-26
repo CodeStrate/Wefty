@@ -57,8 +57,8 @@ export function HelpDialog({ onClose, onStartTour }: HelpDialogProps) {
 
         <Section title="The library">
           <Item term="Harnesses">
-            Claude Code is scanned by default. Add Codex, Cursor, or opencode with the + next to
-            Harnesses; only the ones you add are read.
+            Claude Code is scanned by default. Add Codex, Cursor, Opencode, or Antigravity with the
+            + next to Harnesses; only the ones you add are read.
           </Item>
           <Item term="Projects">
             One per working folder. Right-click to rename, open in the terminal, remove from the
@@ -89,13 +89,13 @@ export function HelpDialog({ onClose, onStartTour }: HelpDialogProps) {
             hover a message to copy it.
           </Item>
           <Item term="Resume">
-            The terminal button resumes the session in its own folder. Claude Code, Codex, and
-            opencode support this. Cursor sessions can only open their folder.
+            The terminal button resumes the session in its own folder. Claude Code, Codex, Opencode,
+            and Antigravity support this. Cursor sessions can only open their folder.
           </Item>
           <Item term="Handoff">
             Builds a Markdown brief: the goal, open threads, the last turns, files touched, and
-            related memories. Copy it, insert its path in the terminal, or Continue in Claude Code
-            or Codex to pick the work up in a fresh session, across harnesses too.
+            related memories. Copy it, insert its path in the terminal, or Continue In any agent
+            with a CLI to pick the work up in a fresh session, across harnesses too.
           </Item>
         </Section>
 

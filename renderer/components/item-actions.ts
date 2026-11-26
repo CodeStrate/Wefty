@@ -51,7 +51,8 @@ export function dragProps(item: LibraryItem) {
 
 type OpenTerminal = (options?: OpenTerminalOptions) => Promise<string | null>;
 
-/** Resume a session in an embedded terminal. Returns false when its harness can't resume.
+/** Resume a session in an embedded terminal. Resolves to the new tab's id or null when the harness can't resume
+ * or nothing opened.
  * Return a Promise so other panes know terminal opened, allowing us to close details pane when terminal opens
  * giving it ample screen space.
  */

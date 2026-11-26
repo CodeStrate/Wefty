@@ -159,6 +159,45 @@ export function DropdownMenuSeparator() {
   return <RadixDropdownMenu.Separator className="mx-1 my-1 h-px bg-separator" />;
 }
 
+export const DropdownMenuSub = RadixDropdownMenu.Sub;
+
+/** A menu item that opens a submenu beside it; the chevron marks it. */
+export function DropdownMenuSubTrigger({
+  icon,
+  sublabel,
+  className,
+  children,
+  ...props
+}: ComponentProps<typeof RadixDropdownMenu.SubTrigger> & MenuItemExtras) {
+  return (
+    <RadixDropdownMenu.SubTrigger
+      className={cn(MENU_ITEM, "data-[state=open]:bg-control-subtle", className)}
+      {...props}
+    >
+      <MenuItemBody icon={icon} sublabel={sublabel}>
+        {children}
+      </MenuItemBody>
+      <ChevronRight aria-hidden className="ml-auto opacity-60" />
+    </RadixDropdownMenu.SubTrigger>
+  );
+}
+
+export function DropdownMenuSubContent({
+  className,
+  sideOffset = 6,
+  ...props
+}: ComponentProps<typeof RadixDropdownMenu.SubContent>) {
+  return (
+    <RadixDropdownMenu.Portal>
+      <RadixDropdownMenu.SubContent
+        sideOffset={sideOffset}
+        className={cn(MENU_CONTENT, className)}
+        {...props}
+      />
+    </RadixDropdownMenu.Portal>
+  );
+}
+
 // --- Dialogs ----------------------------------------------------------------
 
 const DIALOG_SIZES = {

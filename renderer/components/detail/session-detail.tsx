@@ -10,6 +10,9 @@ import {
   CollapsibleTrigger,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   Input,
   Markdown,
   ScrollArea,
@@ -20,6 +23,7 @@ import {
 
 import type {
   HandoffResult,
+  HarnessId,
   LibraryItem,
   LibrarySnapshot,
   SessionSummary,
@@ -27,7 +31,7 @@ import type {
 } from "@main/shared/types";
 
 import { formatDateTime, relativeTime, shortenPath } from "../../lib/format";
-import { canTrash } from "../../lib/harness";
+import { canTrash, HARNESS_STYLES } from "../../lib/harness";
 import { getHandoff, useSessionDetail } from "../../lib/library-api";
 import { resumeSpec, shellQuote } from "../../lib/resume";
 import { projectLabel } from "../../lib/scope";
@@ -48,6 +52,20 @@ import {
 import { resolveFolder } from "@renderer/lib/terminal-api";
 
 const PAGE_SIZE = 80;
+
+interface ContinueTarget {
+  harness: HarnessId;
+  /** The CLI command that starts a new session with `prompt` (already shell-quoted). */
+  command: (prompt: string) => string;
+}
+
+/** Agents a session can be continued in: every harness with a CLI (Cursor has none). */
+const CONTINUE_TARGETS: ContinueTarget[] = [
+  { harness: "claude-code", command: (prompt) => `claude ${prompt}` },
+  { harness: "codex", command: (prompt) => `codex ${prompt}` },
+  { harness: "opencode", command: (prompt) => `opencode --prompt ${prompt}` },
+  { harness: "antigravity", command: (prompt) => `agy -i ${prompt}` },
+];
 
 type Block =
   | { kind: "message"; entry: TranscriptEntry }
@@ -224,14 +242,16 @@ export function SessionDetailPane({
     if (await opened) onClose();
   };
 
-  const continueIn = (cli: "claude" | "codex", name: string) =>
+  const continueIn = (target: ContinueTarget) =>
     void withHandoff(
       (handoff, cwd) =>
         thenCloseDetails(
           openTerminal({
-            cwd: cwd,
-            command: `${cli} ${shellQuote(`Read ${handoff.path} and continue the work it describes.`)}`,
-            title: `${name}: ${session.title.slice(0, 18)}`,
+            cwd,
+            command: target.command(
+              shellQuote(`Read ${handoff.path} and continue the work it describes.`),
+            ),
+            title: `${HARNESS_STYLES[target.harness].name}: ${session.title.slice(0, 18)}`,
           }),
         ),
       { inProject: true },
@@ -267,18 +287,25 @@ export function SessionDetailPane({
             <DropdownMenuItem icon="text.insert" onSelect={insertHandoffPath}>
               Insert Handoff Path in Terminal
             </DropdownMenuItem>
-            <DropdownMenuItem
-              icon="arrow.right.circle"
-              onSelect={() => continueIn("claude", "Claude")}
-            >
-              Continue in Claude Code
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              icon="arrow.right.circle"
-              onSelect={() => continueIn("codex", "Codex")}
-            >
-              Continue in Codex
-            </DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger icon="arrow.right.circle">Continue In</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                {CONTINUE_TARGETS.map((target) => (
+                  <DropdownMenuItem
+                    key={target.harness}
+                    // Same agent: a fresh session from the brief, not a resume (that's the terminal button).
+                    sublabel={
+                      target.harness === session.harness
+                        ? "New session from the handoff"
+                        : undefined
+                    }
+                    onSelect={() => continueIn(target)}
+                  >
+                    {HARNESS_STYLES[target.harness].name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
             <DropdownMenuSeparator />
             <DropdownMenuItem icon="folder" onSelect={() => revealPath(session.sourcePath)}>
               {getOSLabel("reveal")}

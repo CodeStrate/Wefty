@@ -23,7 +23,7 @@ const MAIN_MIN_WIDTH = 460;
 const SQUEEZED_WIDTH = 240;
 /** Matches the primary toolbar height so the panel lines up with it. */
 const HEADER = 52;
-/** MacOS traffic lights constant, Room for the window buttons when terminal covers the window */
+/** Room for the macOS traffic lights when the terminal covers the window. */
 const TRAFFIC_LIGHTS = 84;
 
 /**
