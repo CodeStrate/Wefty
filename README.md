@@ -17,15 +17,15 @@
 
 Wefty does three things:
 
-1. **It shows you what your agents already know.** Claude Code, Codex, Cursor, and opencode keep session transcripts, memory files, and project context on disk. Wefty puts them in one place, where you can read every session, edit any memory, and see on a graph which sessions touched which memories. Browse everything on a timeline or as a searchable list.
+1. **It shows you what your agents already know.** Claude Code, Codex, Cursor, Opencode, and Antigravity keep session transcripts, memory files, and project context on disk. Wefty puts them in one place, where you can read every session, edit any memory, and see on a graph which sessions touched which memories. Browse everything on a timeline or as a searchable list.
 2. **It keeps your work moving when an agent can't.** Hit a usage limit, or the provider is down? Open the session in Wefty and continue it in another agent. The handoff is built from the transcript that's already on disk. Nothing to prepare in your project, no `HANDOFF.md` to keep up to date, no work-in-progress commit.
 3. **It keeps everything in one window.** Wefty has a built-in terminal (the same stack VS Code uses: node-pty + xterm.js), so you don't need a terminal open next to it. Open the terminal pane, resume or hand off a session, and keep vibing.
 
 It isn't an agent and it isn't a sync service. It reads and writes **your local files**, runs your shell in its terminal, and does nothing else.
 
-> **Alpha.** Builds are unsigned and Cursor and opencode support is untested. Expect rough edges, and [issues](https://github.com/CodeStrate/Wefty/issues) are very welcome.
+> **Alpha.** Builds are unsigned and Cursor, Opencode, and Antigravity support is untested. Expect rough edges, and [issues](https://github.com/CodeStrate/Wefty/issues) are very welcome.
 
-[Download](#download) · [Features](#features) · [Harnesses](#supported-harnesses) · [Build from Source](#build-from-source) · [How It Works](#how-it-works) · [Privacy](#privacy) · [Stack](#stack) · [Development](#development) · [Contributing](#contributing) · [Roadmap](#roadmap)
+[Download](#download) · [Updates](#updates) · [Features](#features) · [Harnesses](#supported-harnesses) · [Build from Source](#build-from-source) · [How It Works](#how-it-works) · [Privacy](#privacy) · [Stack](#stack) · [Development](#development) · [Contributing](#contributing) · [Roadmap](#roadmap)
 
 ## When Your Agent Stops Mid-Task
 
@@ -60,12 +60,26 @@ Grab the latest build from [Releases](https://github.com/CodeStrate/Wefty/releas
 
 | OS | File | First launch (unsigned alpha) |
 |---|---|---|
-| macOS (Apple Silicon / Intel) | `.dmg` or `.zip` | If macOS says the app "is damaged", run `xattr -cr /Applications/Wefty.app`, then open it |
+| macOS (Apple Silicon) | `.dmg` or `.zip` | If macOS says the app "is damaged", run `xattr -cr /Applications/Wefty.app`, then open it |
 | Windows 10/11 | `.exe` installer | SmartScreen: **More info → Run anyway** |
 | Ubuntu / Debian | `.deb` | `sudo apt install ./Wefty_*.deb` |
 | Any Linux | `.AppImage` | `chmod +x Wefty-*.AppImage && ./Wefty-*.AppImage` |
 
 The tour starts on first launch; replay it any time from **Help → Show Tour**.
+
+## Updates
+
+Wefty checks GitHub releases once a day for a newer version. When one is out, a download button with a small dot appears at the top of the sidebar; its menu has **Download** (the installer for your OS) and **What's New** (the release notes). **Wefty → Check for Updates…** on macOS, or **Help → Check for Updates…** on Windows and Linux, checks right away. **Settings → Updates** shows your version and turns the daily check off.
+
+To update, download the new version and install it over the old one. Your library, settings, and handoffs stay as they are.
+
+Limitations while Wefty is in alpha:
+
+- **No in-place updates yet.** Wefty tells you a new version is out and links the right installer, but you install it yourself. macOS doesn't let an unsigned app replace itself, so updating in place waits for signed builds (see the [Roadmap](#roadmap)); Windows and the AppImage will get it first.
+- **`.deb` installs** update by installing the new package (`sudo apt install ./Wefty_*.deb`), not from inside the app.
+- **Checks run while Wefty is open:** shortly after launch, then once a day. A closed app doesn't check, and the schedule can't be changed yet.
+- **It needs to reach GitHub.** Offline or behind a firewall, the daily check fails quietly; **Check for Updates…** says it couldn't connect.
+- **Builds from source don't check on their own**, since their version isn't a release. **Check for Updates…** still works.
 
 ## Features
 
@@ -77,8 +91,8 @@ The tour starts on first launch; replay it any time from **Help → Show Tour**.
 | Search | Filters the list, fades non-matches in the timeline and graph, and snaps the view to what it found |
 | Transcript reader | Grouped tool calls, search inside the conversation, hide tools, newest-first, copy any message |
 | Memory editor | Preview / edit with ⌘S / Ctrl+S; follows links between memory files |
-| Terminal | Tabbed login shells in a side panel, titled by shell and folder (`zsh - my-project`). Resume Claude Code, Codex, and opencode sessions in their own folder |
-| Handoff | A no-AI Markdown brief of a session: goal, open threads, last turns, files touched, related memories. Copy it, insert its path in the terminal, or **Continue in Claude Code / Codex** |
+| Terminal | Tabbed login shells in a side panel, titled by shell and folder (`zsh - my-project`). Resume Claude Code, Codex, Opencode, and Antigravity sessions in their own folder |
+| Handoff | A no-AI Markdown brief of a session: goal, open threads, last turns, files touched, related memories. Copy it, insert its path in the terminal, or **Continue In** Claude Code, Codex, Opencode, or Antigravity |
 | Drag and drop | Drag rows, timeline bars, or graph nodes onto the terminal to type a path or resume command (nothing runs until Enter). Drop session or memory files from your file manager to open them |
 | Themes | Wefty (translucent, follows Light/Dark, uses your system accent), Graphite, Midnight, Nord, Dracula, Solarized Dark, Paper, and GitHub Light. Each recolours the whole app, terminal palette and harness colours included |
 | Settings | Theme gallery, Light/Dark/Auto, which harnesses are scanned, and hidden projects. Open it from the gear in the sidebar or ⌘, / Ctrl+, |
@@ -93,9 +107,10 @@ The tour starts on first launch; replay it any time from **Help → Show Tour**.
 | Claude Code (default) | `~/.claude/projects/*/*.jsonl` | `CLAUDE.md`, `CLAUDE.local.md`, `.claude/CLAUDE.md`, project `memory/*.md` | Tested |
 | Codex CLI | `~/.codex/sessions/**/rollout-*.jsonl` | `AGENTS.md`, generated memories | Sessions tested; DB memories untested |
 | Cursor | `state.vscdb` composer history | `.cursorrules`, `.cursor/rules`, `AGENTS.md` | Untested |
-| opencode | `~/.local/share/opencode/storage` | `AGENTS.md` | Untested |
+| Opencode | `~/.local/share/opencode/storage` | `AGENTS.md` | Untested |
+| Antigravity CLI | `~/.gemini/antigravity-cli` conversation index | none yet | Untested |
 
-Only Claude Code is scanned by default. Add others from the **+** next to *Harnesses* in the sidebar, or in Settings. Reports from Cursor and opencode users are very welcome.
+Only Claude Code is scanned by default. Add others from the **+** next to *Harnesses* in the sidebar, or in Settings. Reports from Cursor, Opencode, and Antigravity users are very welcome.
 
 ## Build from Source
 
@@ -128,13 +143,13 @@ Three processes, as in any Electron app:
 
 ### Scanning
 
-Each harness has its own reader (`main/services/harnesses/*`) that turns what's on disk into one data contract: sessions (`"<harness>:<nativeId>"`), memories (`"mem:<path>"`), and projects (by working folder). Only enabled harnesses are scanned and watched; the library rebuilds when agents write new files. SQLite stores (Cursor, Codex memories) are read through the `sqlite3` CLI in read-only mode, so there's no native database module.
+Each harness has its own reader (`main/services/harnesses/*`) that turns what's on disk into one data contract: sessions (`"<harness>:<nativeId>"`), memories (`"mem:<path>"`), and projects (by working folder). Only enabled harnesses are scanned and watched; the library rebuilds when agents write new files. SQLite stores (Cursor and Opencode sessions, Antigravity's conversation index, Codex memories) are read with Node's built-in node:sqlite in read-only mode, so there's no native database module or sqlite3 CLI to install.
 
 Claude Code encodes a project's path into its folder name lossily (`/`, `.`, and `_` all become `-`), so Wefty walks the filesystem to recover the real path.
 
 ### Terminal
 
-Each tab is a login shell (`$SHELL` on macOS/Linux, `%COMSPEC%` on Windows) in a PTY ([`node-pty`](https://github.com/microsoft/node-pty)), rendered with [xterm.js](https://xtermjs.org). Output is batched over IPC and replayed when a tab remounts, so switching tabs or hiding the panel keeps scrollback. The terminal follows the active theme's palette live.
+Each tab is a login shell (`$SHELL` on macOS/Linux, PowerShell 7 or else Windows PowerShell 5.1 on Windows) in a PTY ([`node-pty`](https://github.com/microsoft/node-pty)), rendered with [xterm.js](https://xtermjs.org). Output is batched over IPC and replayed when a tab remounts, so switching tabs or hiding the panel keeps scrollback. The terminal follows the active theme's palette live.
 
 ### Resume
 
@@ -142,12 +157,13 @@ Each tab is a login shell (`$SHELL` on macOS/Linux, `%COMSPEC%` on Windows) in a
 |---|---|
 | Claude Code | `claude --resume <id>` |
 | Codex | `codex resume <id>` |
-| opencode | `opencode --session <id>` |
+| Opencode | `opencode --session <id>` |
+| Antigravity | `agy --conversation <id>` |
 | Cursor | No CLI resume; opens a terminal in the folder |
 
 ### Handoff
 
-`main/services/handoff.ts` turns a transcript into a short Markdown brief: the first request, lines from the last turns that read like unfinished work, the last 12 turns, files touched, and related memory files. It's written to the app's data folder (`handoffs/<session>.md`), so any agent can be pointed at it by path. **Continue in Claude Code / Codex** opens a terminal in the project and starts that CLI with *"Read <handoff> and continue the work it describes."*
+`main/services/handoff.ts` turns a transcript into a short Markdown brief: the first request, lines from the last turns that read like unfinished work, the last 12 turns, files touched, and related memory files. It's written to the app's data folder (`handoffs/<session>.md`), so any agent can be pointed at it by path. **Continue In** (Claude Code, Codex, Opencode, or Antigravity) opens a terminal in the project and starts that CLI with *"Read <handoff> and continue the work it describes."*
 
 ### Themes
 
@@ -155,7 +171,7 @@ Every colour is a CSS token (`--wf-*`). The default theme derives them from blac
 
 ## Privacy
 
-Wefty never sends your data anywhere. Everything is read from and written to local files. It only writes inside an agent's folders when you ask it to: saving a memory you edited, or moving something to the Trash / Recycle Bin after a confirmation.
+Wefty never sends your data anywhere, and updates come through GitHub releases: once a day it asks GitHub whether a newer version exists (turn this off in Settings), sending nothing about you or your library. Everything else is read from and written to local files. It only writes inside an agent's folders when you ask it to: saving a memory you edited, or moving something to the Trash / Recycle Bin after a confirmation.
 
 ## Stack
 
@@ -220,10 +236,13 @@ Bug reports: open an issue with your OS, the harness, what you did, and what you
 
 ## Roadmap
 
-- **Signed builds** - notarized macOS and signed Windows releases once signing certificates are in place, plus auto-update
+- **Signed builds** - notarized macOS and signed Windows releases once signing certificates are in place
+- **In-place updates** - download in the background and install on restart, instead of a download link: Windows and the AppImage first, macOS once builds are signed
+- **Update schedule** - choose how often Wefty checks for updates (daily, weekly, or never)
 - **Resume in another folder** - copy a Claude Code session into a different project and resume it there (confirmed write)
 - **Summary engines** - optional AI summaries for handoffs via `claude -p` / `codex exec`
-- **MCP server** - a stdio server so agents can search and read your library on demand (`search_context`, `get_handoff`, `read_memory`, …), with one-click install into harness configs
 - **Live terminal titles** - follow `cd` via the shell's title/OSC 7 sequences
 - **Native v2** - a Rust build with an Alacritty-backed terminal
 - **Web app sessions (opt-in)** - bring in your chats, projects, and memories from Claude, ChatGPT, Gemini, and other web apps, so they sit in the same library as your coding sessions
+- (Optional) **Intel Mac builds** - an x64 `.dmg` alongside the Apple Silicon one
+- (Optional) **MCP server** - a stdio server so agents can search and read your library on demand (`search_context`, `get_handoff`, `read_memory`, …), with one-click install into harness configs

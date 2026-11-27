@@ -42,7 +42,8 @@ export default [
         {
           patterns: [
             {
-              group: ["@main/*", "**/main/*"],
+              // main/shared/ is the exception: it has no Node imports, so the renderer can use its values.
+              group: ["@main/*", "**/main/*", "!@main/shared", "!**/main/shared"],
               allowTypeImports: true,
               message:
                 "The renderer can't run main-process code (it uses Node). Use `import type`, or get the value over IPC.",

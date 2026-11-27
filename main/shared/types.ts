@@ -10,9 +10,15 @@ export interface CreatedTerminal {
   folder: string;
 }
 
-export type HarnessId = "claude-code" | "codex" | "cursor" | "opencode";
+export type HarnessId = "claude-code" | "codex" | "cursor" | "opencode" | "antigravity";
 
-export const HARNESS_IDS: readonly HarnessId[] = ["claude-code", "codex", "cursor", "opencode"];
+export const HARNESS_IDS: readonly HarnessId[] = [
+  "claude-code",
+  "codex",
+  "cursor",
+  "opencode",
+  "antigravity",
+];
 
 export interface HarnessInfo {
   id: HarnessId;
@@ -102,6 +108,8 @@ export interface TranscriptEntry {
   role: "user" | "assistant" | "tool" | "system";
   text: string;
   toolName?: string;
+  result?: string;
+  isError?: boolean;
 }
 
 export interface SessionDetail {
@@ -140,6 +148,24 @@ export type ThemeSource = "system" | "light" | "dark";
 
 /** A colour theme either follows light/dark (adaptive) or is always one of them. */
 export type ThemeMode = "adaptive" | "light" | "dark";
+
+/** What the daily update check found; the renderer shows a pill when `available` is set. */
+export interface UpdateInfo {
+  /** The version running now, e.g. "0.1.2-alpha". */
+  current: string;
+  /** Automatic daily checks are on (Settings). */
+  autoCheck: boolean;
+  /** When GitHub was last asked, in ms; 0 if never. */
+  checkedAt: number;
+  /** A newer release, or null when this is the latest. */
+  available: {
+    version: string;
+    /** The release page, for its notes. */
+    notesUrl: string;
+    /** This OS's installer, or the release page when there isn't one. */
+    downloadUrl: string;
+  } | null;
+}
 
 export interface ThemeInfo {
   /** Selected colour theme (presets live in renderer/ui/themes.ts). */

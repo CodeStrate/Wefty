@@ -26,6 +26,13 @@ import {
 } from "@renderer/ui";
 
 import type { HarnessInfo, ThemeInfo } from "@main/shared/types";
+import { relativeTime } from "../lib/format";
+import {
+  openUpdateLink,
+  useCheckForUpdates,
+  useSetAutoUpdateCheck,
+  useUpdateInfo,
+} from "../lib/update-api";
 
 import { errorMessage } from "../components/detail/detail-parts";
 import { invoke } from "../lib/bridge";
@@ -46,6 +53,70 @@ function harnessDescription(harness: HarnessInfo): string {
   return `${plural(harness.sessionCount, "session")} · ${harness.memoryCount} ${
     harness.memoryCount === 1 ? "memory" : "memories"
   }`;
+}
+
+function UpdateSettings() {
+  const update = useUpdateInfo().data;
+  const check = useCheckForUpdates();
+  const setAuto = useSetAutoUpdateCheck();
+  if (!update) return null;
+
+  const status = check.isPending
+    ? "Checking…"
+    : update.available
+      ? `Wefty ${update.available.version} is available.`
+      : update.checkedAt
+        ? `Up to date. Checked ${relativeTime(update.checkedAt).toLowerCase()}.`
+        : "Not checked yet.";
+
+  return (
+    <FieldSet>
+      <FieldLegend>Updates</FieldLegend>
+      <FieldDescription>
+        Wefty {update.current}. Updates come from GitHub releases; checking sends nothing about you
+        or your library.
+      </FieldDescription>
+      <FieldGroup>
+        <Field orientation="horizontal">
+          <FieldContent>
+            <FieldLabel htmlFor="update-auto">Check for updates daily</FieldLabel>
+            <FieldDescription>{status}</FieldDescription>
+          </FieldContent>
+          <Switch
+            id="update-auto"
+            checked={update.autoCheck}
+            disabled={setAuto.isPending}
+            onCheckedChange={(enabled) => setAuto.mutate(enabled)}
+          />
+        </Field>
+        <Field orientation="horizontal">
+          <FieldContent>
+            <FieldLabel>Check now</FieldLabel>
+          </FieldContent>
+          {update.available ? (
+            <Button
+              variant="accent"
+              onClick={() => void openUpdateLink(update.available!.downloadUrl)}
+            >
+              Download {update.available.version}
+            </Button>
+          ) : (
+            <Button
+              disabled={check.isPending}
+              onClick={() =>
+                check.mutate(undefined, {
+                  onError: (error) =>
+                    toast.error(`Couldn't check for updates: ${errorMessage(error)}`),
+                })
+              }
+            >
+              Check for Updates
+            </Button>
+          )}
+        </Field>
+      </FieldGroup>
+    </FieldSet>
+  );
 }
 
 function LibrarySettings() {
@@ -331,6 +402,8 @@ export function SettingsView() {
         </FieldSet>
 
         <LibrarySettings />
+
+        <UpdateSettings />
       </div>
     </ScrollArea>
   );

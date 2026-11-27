@@ -1,14 +1,11 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as readline from "readline";
-import { execFile } from "child_process";
-import { promisify } from "util";
 
-import { HOME, SQLITE_BINARY, isAbsolutePath } from "./platform.js";
+import { HOME, isAbsolutePath } from "./platform.js";
 
 export { HOME };
-
-const execFileAsync = promisify(execFile);
+import { DatabaseSync, type SQLInputValue } from "node:sqlite";
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -87,15 +84,24 @@ export function parseTimestamp(value: unknown): number {
   return 0;
 }
 
-export async function querySqlite(dbPath: string, sql: string): Promise<Record<string, unknown>[]> {
-  const { stdout } = await execFileAsync(SQLITE_BINARY, ["-readonly", "-json", dbPath, sql], {
-    maxBuffer: 64 * 1024 * 1024,
-    timeout: 20_000,
-  });
-  const trimmed = stdout.trim();
-  if (!trimmed) return [];
-  const parsed: unknown = JSON.parse(trimmed);
-  return Array.isArray(parsed) ? parsed.filter(isRecord) : [];
+/** A read only query on SQLite using Node's built-in SQLite db so the harnesses which need it:
+ * like Cursor, Opencode, Antigravity wouldn't require sqlite cli on any OS.
+ * It opens and closes per call, values go in the ? params.
+ */
+export async function querySqlite(
+  dbPath: string,
+  sql: string,
+  ...sqlParams: SQLInputValue[]
+): Promise<Record<string, unknown>[]> {
+  const db = new DatabaseSync(dbPath, { readOnly: true });
+  try {
+    return db
+      .prepare(sql)
+      .all(...sqlParams)
+      .filter(isRecord);
+  } finally {
+    db.close();
+  }
 }
 
 const SAFE_ID = /^[A-Za-z0-9_-]+$/;
@@ -254,6 +260,17 @@ export function describeTool(input: unknown, cwd: string | null): string {
   } catch {
     return "";
   }
+}
+
+export function toolResultText(content: unknown): string {
+  if (typeof content === "string") return content.trim();
+  // if content isnt an array
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((part) => (isRecord(part) && typeof part.text === "string" ? part.text : ""))
+    .filter(Boolean)
+    .join("\n")
+    .trim();
 }
 
 export async function writeFileAtomic(target: string, content: string): Promise<void> {

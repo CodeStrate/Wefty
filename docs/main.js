@@ -12,7 +12,7 @@
   const ctx = canvas.getContext("2d");
 
   const COLORS = { claude: "#e5732e", codex: "#3b8eea", cursor: "#9a6fd6", opencode: "#3aa676" };
-  const NAMES = { claude: "Claude Code", codex: "Codex", cursor: "Cursor", opencode: "opencode" };
+  const NAMES = { claude: "Claude Code", codex: "Codex", cursor: "Cursor", opencode: "Opencode" };
   const PROJECTS = ["ios-app", "billing-service", "acme-api", "docs-site", "infra"];
   const TITLES = [
     "Offline sync conflict handling", "Proration for mid-cycle upgrades", "Per-IP rate limiting",
@@ -23,7 +23,7 @@
   ];
   const MEMORIES = ["CLAUDE.md", "AGENTS.md", "Memory Index", "Auth decisions", "API conventions", "Proration rules"];
 
-  const SPEED = 18; // px per second
+  const SPEED = 32; // px per second: quick enough to read as live, slow enough to read the titles
   const BAND = 150; // width of a "day" column
   const TOP = 46;
 
@@ -99,6 +99,19 @@
     ctx.globalAlpha = 1;
   }
 
+  /** An expanding, fading ring: `t` runs from 0 (start) to 1 (gone). */
+  function ring(x, y, t, rgb) {
+    ctx.strokeStyle = `rgba(${rgb},${0.9 * (1 - t)})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, 5 + t * 26, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(${rgb},${0.35 * (1 - t)})`;
+    ctx.beginPath();
+    ctx.arc(x, y, 5 + t * 10, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   function draw(time) {
     ctx.clearRect(0, 0, width, height);
     ctx.textBaseline = "middle";
@@ -168,21 +181,31 @@
         if (item.limited && item.end <= camera) {
           // The stop: a crimson tick, then a cyan handoff link to where the next agent picks up.
           const xe = screenX(item.end);
+          const since = (camera - item.end) / SPEED; // seconds since the limit was hit
+          if (since < 1.4 && !reduceMotion) ring(xe + 3, by, since / 1.4, "186,20,52");
           ctx.fillStyle = "#ba1434";
           ctx.fillRect(xe + 2, by - 9, 2.5, 18);
           ctx.font = '500 10.5px "Geist Mono", ui-monospace, monospace';
           ctx.fillStyle = "#e5a6b2";
-          label("usage limit", xe + 8, by + 15, 0.9);
+          label("usage limit", xe + 8, by + 15, Math.min(0.9, since * 1.5));
           ctx.strokeStyle = "#1fcee7";
           ctx.globalAlpha = 0.85;
           ctx.setLineDash([3, 4]);
+          ctx.lineDashOffset = reduceMotion ? 0 : -time / 45; // the dashes march toward the next agent
           ctx.lineWidth = 1.4;
           ctx.beginPath();
           ctx.moveTo(xe + 6, by);
           ctx.lineTo(Math.min(screenX(item.end + 40), nowX), by);
           ctx.stroke();
           ctx.setLineDash([]);
+          ctx.lineDashOffset = 0;
           ctx.globalAlpha = 1;
+        }
+
+        if (item.continued && !reduceMotion) {
+          // The next agent picks up: a cyan glow where its session begins.
+          const since = (camera - item.start) / SPEED;
+          if (since >= 0 && since < 1.6) ring(x0, by, since / 1.6, "31,206,231");
         }
       }
     });
@@ -235,7 +258,9 @@
   function frame(time) {
     requestAnimationFrame(frame);
     if (document.hidden || !visible) return (last = 0);
-    const delta = last ? Math.min(time - last, 100) : 16;
+    // First frame (or back from hidden): just note the time, so the next frame has a real delta.
+    if (!last) return (last = time);
+    const delta = Math.min(time - last, 100);
     if (delta < 1000 / 40) return; // ~40 fps is plenty for a slow drift
     last = time;
     camera += (SPEED * delta) / 1000;
@@ -274,18 +299,26 @@
    * A path through every marker that stays in the margins: straight down past a section, then
    * across in the empty space above the next one, then down into its marker.
    */
+  let points = [];
+  /** Length along the thread at which it reaches each marker. */
+  let marks = [];
+
   function layout() {
-    const points = nodes.map(center);
+    points = nodes.map(center);
     let d = `M ${points[0].x} ${points[0].y}`;
+    marks = [0];
     for (let i = 1; i < points.length; i++) {
       const a = points[i - 1];
       const b = points[i];
       if (Math.abs(a.x - b.x) < 2) {
         d += ` L ${b.x} ${b.y}`;
-        continue;
+      } else {
+        const turn = Math.max(a.y + 20, b.y - 96);
+        d += ` L ${a.x} ${turn} C ${a.x} ${turn + 40}, ${b.x} ${turn + 22}, ${b.x} ${turn + 64} L ${b.x} ${b.y}`;
       }
-      const turn = Math.max(a.y + 20, b.y - 96);
-      d += ` L ${a.x} ${turn} C ${a.x} ${turn + 40}, ${b.x} ${turn + 22}, ${b.x} ${turn + 64} L ${b.x} ${b.y}`;
+      // Measure the thread up to this marker, so the fill can stop exactly on it.
+      fill.setAttribute("d", d);
+      marks.push(fill.getTotalLength());
     }
     base.setAttribute("d", d);
     fill.setAttribute("d", d);
@@ -294,19 +327,71 @@
     progress();
   }
 
+  /**
+   * Fill the thread up to a reading line 60% down the window. A marker lights exactly when the
+   * fill reaches it, and at the bottom of the page everything is lit, so the line always arrives.
+   */
   function progress() {
-    const box = flow.getBoundingClientRect();
-    const reached = innerHeight * 0.6 - box.top;
-    const amount = Math.max(0, Math.min(1, reached / box.height));
-    fill.style.strokeDashoffset = `${length * (1 - amount)}`;
-    for (const node of nodes) node.classList.toggle("on", node.getBoundingClientRect().top < innerHeight * 0.6);
+    const origin = flow.getBoundingClientRect().top;
+    const line = innerHeight * 0.6 - origin; // the reading line, in thread coordinates
+    const atBottom = innerHeight + scrollY >= document.documentElement.scrollHeight - 4;
+    let filled = 0;
+    if (atBottom) filled = length;
+    else {
+      for (let i = 0; i < points.length; i++) {
+        if (line < points[i].y) {
+          // Between marker i - 1 and marker i: fill that share of the stretch between them.
+          if (i > 0) {
+            const share = (line - points[i - 1].y) / (points[i].y - points[i - 1].y);
+            filled = marks[i - 1] + Math.max(0, share) * (marks[i] - marks[i - 1]);
+          }
+          break;
+        }
+        filled = marks[i];
+      }
+    }
+    fill.style.strokeDashoffset = `${length - filled}`;
+    nodes.forEach((node, i) => node.classList.toggle("on", filled >= marks[i] - 0.5 && filled > 0));
   }
 
-  layout();
-  addEventListener("resize", layout);
-  addEventListener("load", layout);
+  // Images, web fonts, and the download buttons all arrive after the first layout and move the
+  // markers, so redraw on any size change instead of a fixed list of events.
+  let pending = false;
+  new ResizeObserver(() => {
+    if (pending) return;
+    pending = true;
+    requestAnimationFrame(() => {
+      pending = false;
+      layout();
+    });
+  }).observe(document.body);
   addEventListener("scroll", progress, { passive: true });
-  if (document.fonts) document.fonts.ready.then(layout);
+
+  /* ---------- Nav and reveals ---------- */
+
+  const bar = document.querySelector(".bar");
+  const onScroll = () => bar.classList.toggle("scrolled", scrollY > 8);
+  onScroll();
+  addEventListener("scroll", onScroll, { passive: true });
+
+  // Each section's content rises in once. The markers stay put, so the thread never moves.
+  const revealed = document.querySelectorAll(".step > :not(.node)");
+  if (!reduceMotion && "IntersectionObserver" in window) {
+    const reveal = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          entry.target.classList.add("in");
+          reveal.unobserve(entry.target);
+        }
+      },
+      { rootMargin: "0px 0px -8% 0px" },
+    );
+    for (const element of revealed) {
+      element.classList.add("reveal");
+      reveal.observe(element);
+    }
+  }
 
   /* ---------- Screenshot tabs ---------- */
 
@@ -324,18 +409,69 @@
   const cap = document.getElementById("shot-cap");
   const tabs = [...document.querySelectorAll("[data-shot]")];
   for (const [src] of Object.values(SHOTS)) new Image().src = src;
+  const tabList = document.querySelector(".tabs");
+  const TAB_MS = 5000;
+  let swap = 0;
   function select(tab) {
     const [src, alt, caption] = SHOTS[tab.dataset.shot];
     for (const other of tabs) other.setAttribute("aria-selected", String(other === tab));
-    img.src = src;
-    img.alt = alt;
     cap.textContent = caption;
+    if (reduceMotion) {
+      img.src = src;
+      img.alt = alt;
+      return;
+    }
+    // Crossfade: fade out, swap the picture, fade back in.
+    clearTimeout(swap);
+    img.classList.add("swapping");
+    swap = setTimeout(() => {
+      img.src = src;
+      img.alt = alt;
+      img.classList.remove("swapping");
+    }, 200);
   }
+
+  // Auto-advance while the section is on screen; any click or key stops it for good.
+  let auto = !reduceMotion;
+  let timer = 0;
+  tabList.style.setProperty("--tab-ms", `${TAB_MS}ms`);
+  function schedule() {
+    clearTimeout(timer);
+    if (!auto) return;
+    tabList.classList.remove("auto");
+    void tabList.offsetWidth; // restart the progress bar
+    tabList.classList.add("auto");
+    timer = setTimeout(() => {
+      const current = tabs.findIndex((tab) => tab.getAttribute("aria-selected") === "true");
+      select(tabs[(current + 1) % tabs.length]);
+      schedule();
+    }, TAB_MS);
+  }
+  function stopAuto() {
+    auto = false;
+    clearTimeout(timer);
+    tabList.classList.remove("auto");
+  }
+  if (auto) {
+    new IntersectionObserver(([entry]) => {
+      if (!auto) return;
+      if (entry.isIntersecting) schedule();
+      else {
+        clearTimeout(timer);
+        tabList.classList.remove("auto");
+      }
+    }).observe(document.getElementById("look"));
+  }
+
   tabs.forEach((tab, index) => {
-    tab.addEventListener("click", () => select(tab));
+    tab.addEventListener("click", () => {
+      stopAuto();
+      select(tab);
+    });
     tab.addEventListener("keydown", (event) => {
       const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
       if (!step) return;
+      stopAuto();
       const next = tabs[(index + step + tabs.length) % tabs.length];
       next.focus();
       select(next);
@@ -355,7 +491,7 @@
       label: "Download for Linux",
       note: "AppImage",
       match: /\.AppImage$/,
-      alt: {key: "deb", label: ".deb for Debian/Ubuntu", match: /_amd64\.deb$/ } 
+      alt: { key: "deb", short: ".deb", label: ".deb package for Debian and Ubuntu", match: /_amd64\.deb$/ } 
     },
   ];
 
@@ -365,10 +501,11 @@
       .map((target) => {
         const primary = target.os === (os ?? "mac") ? " primary" : "";
         const note = target.note ? ` <small>${target.note}</small>` : "";
-        const alt = target.alt
-        ? `<a class="alt" href="${urls[target.alt.key] ?? RELEASES}"> or ${target.alt.label}</a>`
-        : ""
-        return `<a class="btn${primary}" href="${urls[target.os] ?? RELEASES}">${ICON}${target.label}${note}</a>${alt}`;
+        const button = `<a class="btn${primary}" href="${urls[target.os] ?? RELEASES}">${ICON}${target.label}${note}</a>`;
+        if (!target.alt) return button;
+        // The alternative package rides along as a small segment joined to the main button.
+        const alt = `<a class="btn seg" href="${urls[target.alt.key] ?? RELEASES}" title="${target.alt.label}" aria-label="Download the ${target.alt.label}">${target.alt.short}</a>`;
+        return `<span class="btn-group">${button}${alt}</span>`;
       })
       .join("");
     for (const slot of document.querySelectorAll("[data-downloads]")) slot.innerHTML = html;

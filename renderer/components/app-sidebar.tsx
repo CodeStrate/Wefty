@@ -29,6 +29,7 @@ import { useTerminals } from "../lib/terminal-context";
 import { getOSLabel } from "@renderer/lib/os-labels";
 import type { LibraryAction } from "./library-dialogs";
 import { HarnessDot } from "./item-visuals";
+import { UpdateButton } from "./update-button";
 import { invoke } from "@renderer/lib/bridge";
 
 interface AppSidebarProps {
@@ -109,6 +110,7 @@ export function AppSidebar({
     <Sidebar
       actions={
         <>
+          <UpdateButton />
           <Button
             aria-label="Rescan agent folders"
             title="Rescan agent folders"
@@ -132,7 +134,7 @@ export function AppSidebar({
         library ? (
           <SidebarFooter>
             <Text variant="small" color="tertiary" className="block px-3 pt-2 pb-3">
-              Updated {relativeTime(library.scannedAt).toLowerCase()}
+              Library updated {relativeTime(library.scannedAt).toLowerCase()}
             </Text>
           </SidebarFooter>
         ) : undefined

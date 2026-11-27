@@ -3,9 +3,10 @@
 
 import type { BrowserWindow, MenuItemConstructorOptions } from "electron";
 
-import { app, ipcMain, logger, Menu } from "./electron/runtime.js";
+import { app, dialog, ipcMain, logger, Menu, shell } from "./electron/runtime.js";
 import { registerHandlers } from "./handlers/index.js";
 import { applySavedTheme } from "./handlers/theme.js";
+import { checkForUpdates, startUpdateChecks } from "./services/updates.js";
 import { getSettingsWindow, openSettingsWindow } from "./windows/settings-window.js";
 import { createSecureWindow } from "./windows/secure-window.js";
 import { getAppIconPath, getWindowUrl } from "./windows/window-paths.js";
@@ -43,7 +44,45 @@ async function createMainWindow(): Promise<void> {
   await mainWindow.loadURL(getWindowUrl("main-window.html"));
 }
 
+/** Help › Check for Updates…: always asks GitHub now, and always answers. */
+async function checkForUpdatesFromMenu(): Promise<void> {
+  const parent = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
+  const show = (options: Electron.MessageBoxOptions) =>
+    parent ? dialog.showMessageBox(parent, options) : dialog.showMessageBox(options);
+  try {
+    const { available, current } = await checkForUpdates();
+    if (!available) {
+      await show({
+        type: "info",
+        message: "You're up to date",
+        detail: `Wefty ${current} is the latest version.`,
+      });
+      return;
+    }
+    const { response } = await show({
+      type: "info",
+      message: `Wefty ${available.version} is available`,
+      detail: `You have ${current}. Download the new version and install it over this one; your library and settings stay as they are.`,
+      buttons: ["Download", "Release Notes", "Later"],
+      defaultId: 0,
+      cancelId: 2,
+    });
+    if (response === 0) await shell.openExternal(available.downloadUrl);
+    if (response === 1) await shell.openExternal(available.notesUrl);
+  } catch (error) {
+    await show({
+      type: "warning",
+      message: "Couldn't check for updates",
+      detail: `GitHub couldn't be reached (${error instanceof Error ? error.message : String(error)}). Try again later.`,
+    });
+  }
+}
+
 function setupApplicationMenu(): void {
+  const checkUpdates: MenuItemConstructorOptions = {
+    label: "Check for Updates…",
+    click: () => void checkForUpdatesFromMenu(),
+  };
   const settings: MenuItemConstructorOptions = {
     label: isMac ? "Settings…" : "Preferences…",
     accelerator: "CmdOrCtrl+,",
@@ -57,6 +96,7 @@ function setupApplicationMenu(): void {
             label: APP_NAME,
             submenu: [
               { role: "about" },
+              checkUpdates,
               { type: "separator" },
               settings,
               { type: "separator" },
@@ -87,6 +127,8 @@ function setupApplicationMenu(): void {
           click: () => ipcMain.broadcast("help:open", {}),
         },
         { label: "Show Tour", click: () => ipcMain.broadcast("tour:start", {}) },
+        // macOS lists it under the app menu, by About.
+        ...(isMac ? [] : [{ type: "separator" } as const, checkUpdates]),
       ],
     },
   ];
@@ -132,4 +174,5 @@ app.whenReady().then(async () => {
   await createMainWindow().catch((error) =>
     logger.error("main", "Failed to create main window", error),
   );
+  startUpdateChecks();
 });

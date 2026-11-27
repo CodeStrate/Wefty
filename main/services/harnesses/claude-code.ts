@@ -4,7 +4,6 @@ import * as path from "path";
 import type { MemorySummary, SessionSummary, TranscriptEntry } from "../../shared/types.js";
 import { readMarkdownMemory } from "../memory-files.js";
 import {
-  HOME,
   StatCache,
   describeTool,
   isRecord,
@@ -17,15 +16,15 @@ import {
   str,
   stripSystemNoise,
   toolFilePath,
+  toolResultText,
   truncate,
 } from "../util.js";
+import { MAX_ENTRIES, MAX_ENTRY_CHARS, MAX_FILES_TOUCHED, MAX_RESULT_CHARS } from "./limits.js";
 
-export const CLAUDE_ROOT = path.join(HOME, ".claude");
+import { CLAUDE_ROOT } from "../platform.js";
+
+export { CLAUDE_ROOT };
 export const CLAUDE_PROJECTS_DIR = path.join(CLAUDE_ROOT, "projects");
-
-const MAX_FILES_TOUCHED = 40;
-const MAX_ENTRIES = 3000;
-const MAX_ENTRY_CHARS = 12_000;
 
 const summaryCache = new StatCache<SessionSummary | null>(4000);
 
@@ -250,6 +249,7 @@ export async function scanClaudeCode(): Promise<{
 export async function readClaudeSession(session: SessionSummary): Promise<TranscriptEntry[]> {
   const entries: TranscriptEntry[] = [];
   let lastAssistantId: string | null = null;
+  const toolsById = new Map<string, TranscriptEntry>();
 
   await readJsonLines(session.sourcePath, (record) => {
     if (entries.length >= MAX_ENTRIES) return false;
@@ -260,6 +260,16 @@ export async function readClaudeSession(session: SessionSummary): Promise<Transc
 
     if (type === "user") {
       if (record.isMeta === true) return;
+      // read tool results
+      if (Array.isArray(message.content)) {
+        for (const part of message.content) {
+          if (!isRecord(part) || part.type !== "tool_result") continue; // skip non tool result content
+          const tool = toolsById.get(str(part.tool_use_id) ?? "");
+          if (!tool) continue;
+          tool.result = truncate(toolResultText(part.content), MAX_RESULT_CHARS);
+          tool.isError = part.is_error === true;
+        }
+      }
       const prompt = userPrompt(message.content);
       if (!prompt) return;
       lastAssistantId = null;
@@ -288,12 +298,15 @@ export async function readClaudeSession(session: SessionSummary): Promise<Transc
         }
         lastAssistantId = messageId;
       } else if (part.type === "tool_use") {
-        entries.push({
+        const tool: TranscriptEntry = {
           id: String(entries.length),
           role: "tool",
           toolName: str(part.name) ?? "Tool",
           text: describeTool(part.input, session.cwd),
-        });
+        };
+        entries.push(tool);
+        const toolId = str(part.id);
+        if (toolId) toolsById.set(toolId, tool);
         lastAssistantId = null;
       }
     }

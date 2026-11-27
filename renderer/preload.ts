@@ -15,6 +15,7 @@ const NOTIFICATION_CHANNELS = new Set([
   "help:open",
   "tour:start",
   "theme:changed",
+  "update:changed",
 ]);
 
 const api = {
