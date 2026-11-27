@@ -17,6 +17,7 @@ import {
   str,
   stripSystemNoise,
   toolFilePath,
+  toolTextResult,
   truncate,
 } from "../util.js";
 
@@ -26,6 +27,9 @@ export const CLAUDE_PROJECTS_DIR = path.join(CLAUDE_ROOT, "projects");
 const MAX_FILES_TOUCHED = 40;
 const MAX_ENTRIES = 3000;
 const MAX_ENTRY_CHARS = 12_000;
+
+/** Tool call output kept per entry; enough for an error message and small enough for IPC. */
+const MAX_RESULT_CHARS = 1200;
 
 const summaryCache = new StatCache<SessionSummary | null>(4000);
 
@@ -250,6 +254,7 @@ export async function scanClaudeCode(): Promise<{
 export async function readClaudeSession(session: SessionSummary): Promise<TranscriptEntry[]> {
   const entries: TranscriptEntry[] = [];
   let lastAssistantId: string | null = null;
+  const toolsById = new Map<string, TranscriptEntry>();
 
   await readJsonLines(session.sourcePath, (record) => {
     if (entries.length >= MAX_ENTRIES) return false;
@@ -260,6 +265,16 @@ export async function readClaudeSession(session: SessionSummary): Promise<Transc
 
     if (type === "user") {
       if (record.isMeta === true) return;
+      // read tool results
+      if(Array.isArray(message.content)) {
+        for (const part of message.content) {
+          if (!isRecord(part) || part.type !== "tool_result") continue; // skip non tool result content
+          const tool = toolsById.get(str(part.tool_use_id) ?? "")
+          if (!tool) continue;
+          tool.result = truncate(toolTextResult(part.content), MAX_RESULT_CHARS);
+          tool.isError = part.is_error === true;
+        }
+      }
       const prompt = userPrompt(message.content);
       if (!prompt) return;
       lastAssistantId = null;
@@ -288,12 +303,15 @@ export async function readClaudeSession(session: SessionSummary): Promise<Transc
         }
         lastAssistantId = messageId;
       } else if (part.type === "tool_use") {
-        entries.push({
+        const tool: TranscriptEntry = {
           id: String(entries.length),
           role: "tool",
           toolName: str(part.name) ?? "Tool",
           text: describeTool(part.input, session.cwd),
-        });
+        }
+        entries.push(tool);
+        const toolId = str(part.id);
+        if (toolId) toolsById.set(toolId, tool);
         lastAssistantId = null;
       }
     }

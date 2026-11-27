@@ -18,6 +18,7 @@ import {
   shellQuote,
   str,
   truncate,
+  toolTextResult,
 } from "../util.js";
 
 export const CODEX_ROOT = path.join(HOME, ".codex");
@@ -29,6 +30,9 @@ export const CODEX_SESSION_DIRS = [
 const MAX_FILES_TOUCHED = 40;
 const MAX_ENTRIES = 3000;
 const MAX_ENTRY_CHARS = 12_000;
+
+/** Same as claude */
+const MAX_RESULT_CHARS = 1200;
 const CODEX_MEMORY_PREFIX = "codex-memory:";
 
 const summaryCache = new StatCache<SessionSummary | null>(4000);
@@ -257,6 +261,8 @@ export async function scanCodex(): Promise<{
 
 export async function readCodexSession(session: SessionSummary): Promise<TranscriptEntry[]> {
   const entries: TranscriptEntry[] = [];
+  const toolByCall = new Map<string, TranscriptEntry>();
+
   await readJsonLines(session.sourcePath, (record) => {
     if (entries.length >= MAX_ENTRIES) return false;
     if (record.type !== "response_item") return;
@@ -287,21 +293,37 @@ export async function readCodexSession(session: SessionSummary): Promise<Transcr
           // Leave raw string.
         }
       }
-      entries.push({
-        id: String(entries.length),
-        role: "tool",
-        toolName: str(payload.name) ?? "Tool",
-        text: describeTool(args, session.cwd),
-      });
+      const tool: TranscriptEntry = {
+          id: String(entries.length),
+          role: "tool",
+          toolName: str(payload.name) ?? "Tool",
+          text: describeTool(args, session.cwd),
+        }
+        entries.push(tool);
+        const callId = str(payload.call_id);
+        if (callId) toolByCall.set(callId, tool);
+
     } else if (payload.type === "custom_tool_call") {
       const input = typeof payload.input === "string" ? payload.input : "";
       const touched = patchFiles(input, null);
-      entries.push({
-        id: String(entries.length),
-        role: "tool",
-        toolName: str(payload.name) ?? "Tool",
-        text: touched.length ? touched.join(", ") : oneLine(input, 200),
-      });
+      
+      const tool: TranscriptEntry = {
+          id: String(entries.length),
+          role: "tool",
+          toolName: str(payload.name) ?? "Tool",
+          text: touched.length ? touched.join(", ") : oneLine(input, 200),
+        }
+        entries.push(tool);
+        const callId = str(payload.call_id);
+        if (callId) toolByCall.set(callId, tool);
+
+    } else if (
+      payload.type === "function_call_output" ||
+      payload.type === "custom_tool_call_output"
+    ) {
+      // A string of function calls; a list of {type : "input_text", text} for custom tools.
+      const tool = toolByCall.get(str(payload.call_id) ?? "");
+      if (tool) tool.result = truncate(toolTextResult(payload.output), MAX_RESULT_CHARS)
     }
   });
   return entries;

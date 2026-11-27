@@ -5,6 +5,7 @@
 import * as path from "path";
 
 import type { MemorySummary, SessionDetail, TranscriptEntry } from "../shared/types.js";
+import { oneLine } from "./util.js";
 
 const RECENT_TURNS = 12;
 const TURN_CHARS = 1200;
@@ -12,6 +13,35 @@ const FIRST_PROMPT_CHARS = 2000;
 const MAX_FILES = 40;
 const OPEN_THREAD_SCAN = 6;
 const MAX_OPEN_THREADS = 10;
+
+const LAST_ACTIONS = 8;
+const RESULT_LINES = 2;
+const ERROR_CHARS = 400;
+
+/** The last few tool calls, with their errors kept whole and each with the start of their output. */
+function lastActions(entries:TranscriptEntry[]): string[] {
+  return entries
+  .filter((entry) => entry.role === "tool")
+  .slice(-LAST_ACTIONS)
+  .map((tool) => {
+    const head = `- ${tool.toolName ?? "Tool"}: ${oneLine(tool.text)}${tool.isError ? " (failed)" : ""}`;
+    const result = tool.result?.trim();
+    if (!result) return head;
+    const shown = tool.isError ? clip(result, ERROR_CHARS) : result.split("\n").slice(0, RESULT_LINES).join("\n");
+    const indented = shown.split("\n").map((line) => `  ${line}`).join("\n");
+    return `${head}\n${indented}`;
+  })
+}
+
+/** The tool call a session ended on mid call, when nothing was done or said after it. */
+function stoppedMidAction(entries: TranscriptEntry[]): TranscriptEntry | null {
+  for (let index = entries.length - 1; index >= 0; index--){
+    const entry = entries[index];
+    if (entry.role === "tool") return entry;
+    if (entry.role === "user" || entry.role === "assistant") return null;
+  }
+  return null;
+}
 
 const HARNESS_NAMES: Record<string, string> = {
   "claude-code": "Claude Code",
@@ -50,6 +80,7 @@ function openThreads(turns: TranscriptEntry[]): string[] {
       if (
         cleaned.length > 3 &&
         cleaned.length < 300 &&
+        !cleaned.endsWith(":") &&
         pattern.test(cleaned) &&
         !found.includes(cleaned)
       ) {
@@ -88,6 +119,18 @@ export function buildHandoff(detail: SessionDetail, memories: MemorySummary[]): 
     "",
   );
 
+  const stopped = stoppedMidAction(entries);
+  if (stopped){
+    lines.push(
+      `**This session stopped mid-action.** Last action: ${stopped.toolName ?? "Tool"} ${oneLine(stopped.text)}${stopped.result ? "" : " (it never returned)"}.`,
+      ""
+    )
+  }
+  lines.push(
+    "If this is a git repository, run `git status` and `git diff` before anything else, and trust the working tree over this summary: it shows what actually changed.",
+    "",
+  );
+
   if (firstPrompt)
     lines.push("## Goal (first request)", "", quote(clip(firstPrompt, FIRST_PROMPT_CHARS)), "");
 
@@ -97,6 +140,9 @@ export function buildHandoff(detail: SessionDetail, memories: MemorySummary[]): 
     for (const thread of threads) lines.push(`- ${thread.replace(/^[-*]\s+(\[ \]\s+)?/, "")}`);
     lines.push("");
   }
+
+  const actions = lastActions(entries);
+  if (actions.length > 0) lines.push(`## Last Actions (${actions.length}):`, "", ...actions, "");
 
   if (recent.length > 0) {
     lines.push(`## Where it left off (last ${recent.length} turns)`, "");

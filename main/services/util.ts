@@ -271,6 +271,17 @@ export function describeTool(input: unknown, cwd: string | null): string {
   }
 }
 
+export function toolTextResult(content: unknown): string {
+  if (typeof content === "string") return content.trim();
+  // if content isnt an array
+  if(!Array.isArray(content)) return "";
+  return content
+  .map((part) => (isRecord(part) && typeof part.text === "string" ? part.text : ""))
+  .filter(Boolean)
+  .join("\n")
+  .trim();
+}
+
 export async function writeFileAtomic(target: string, content: string): Promise<void> {
   const temp = path.join(
     path.dirname(target),
