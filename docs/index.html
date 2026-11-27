@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
 <!-- Bump ?v= with each site change: GitHub Pages lets browsers cache these for 10 minutes. -->
-<link rel="stylesheet" href="style.css?v=0.1.2">
+<link rel="stylesheet" href="style.css?v=0.1.2-2">
 <link rel="icon" type="image/png" href="img/icon-64.png">
 <link rel="apple-touch-icon" href="img/icon-256.png">
 <meta property="og:title" content="Wefty · every agent session, all in one place">
@@ -36,7 +36,7 @@
   <section class="hero" aria-labelledby="hero-h">
     <p class="eyebrow">Wefty / memory and sessions for coding agents</p>
     <h1 id="hero-h">Every agent session.<br>All in one place.</h1>
-    <p class="lede">See and edit what Claude Code, Codex, Cursor, and Opencode already keep on disk. When one agent hits its limit, another picks the work up, straight from the transcript.</p>
+    <p class="lede">See and edit what Claude Code, Codex, Cursor, Opencode, and Antigravity already keep on disk. When one agent hits its limit, another picks the work up, straight from the transcript.</p>
     <div class="cta" data-downloads></div>
     <p class="fine">Free and open source · Apache-2.0 · <span data-version>latest release</span></p>
   </section>
@@ -45,7 +45,7 @@
     <div class="river-mask"><canvas id="river" aria-hidden="true"></canvas></div>
     <div class="river-foot">
       <span class="node start" aria-hidden="true"></span>
-      <span class="legend fine"><span><i class="dot claude"></i>Claude Code</span><span><i class="dot codex"></i>Codex</span><span><i class="dot cursor"></i>Cursor</span><span><i class="dot opencode"></i>Opencode</span><span><i class="dia"></i>memory</span></span>
+      <span class="legend fine"><span><i class="dot claude"></i>Claude Code</span><span><i class="dot codex"></i>Codex</span><span><i class="dot cursor"></i>Cursor</span><span><i class="dot opencode"></i>Opencode</span><span><i class="dot antigravity"></i>Antigravity</span><span><i class="dia"></i>memory</span></span>
       <span class="fine live">Live: watch a lane hit its limit and carry on in another agent.</span>
     </div>
   </section>
@@ -81,7 +81,7 @@
       <div class="split">
         <ol class="steps">
           <li><b>Open the session.</b><span>It's already in the library. Wefty watches the agents' folders.</span></li>
-          <li><b>Continue in another agent.</b><span>One click in the session's menu. Claude Code to Codex, or back.</span></li>
+          <li><b>Continue in another agent.</b><span>One click in the session's menu: Claude Code, Codex, Opencode, or Antigravity, whichever agent you started in.</span></li>
           <li><b>Keep going.</b><span>Wefty writes a Markdown brief from the transcript and starts the next agent in your project, in its built-in terminal.</span></li>
         </ol>
         <pre class="brief" aria-label="An example handoff"><span class="h"># Handoff: Proration for mid-cycle upgrades</span>
@@ -113,6 +113,7 @@
         <span class="chip"><i class="dot codex"></i>Codex</span>
         <span class="chip"><i class="dot cursor"></i>Cursor</span>
         <span class="chip"><i class="dot opencode"></i>Opencode</span>
+        <span class="chip"><i class="dot antigravity"></i>Antigravity</span>
       </div>
       <div class="facts">
         <div><b>Edit memory in place</b><span>Fix a wrong line in CLAUDE.md or a memory file, and every agent that reads it gets the fix.</span></div>
@@ -142,6 +143,6 @@
   <span>Local only. Nothing leaves your machine.</span>
 </footer>
 
-<script src="main.js?v=0.1.2"></script>
+<script src="main.js?v=0.1.2-2"></script>
 </body>
 </html>

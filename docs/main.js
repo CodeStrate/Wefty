@@ -11,8 +11,11 @@
   const canvas = document.getElementById("river");
   const ctx = canvas.getContext("2d");
 
-  const COLORS = { claude: "#e5732e", codex: "#3b8eea", cursor: "#9a6fd6", opencode: "#3aa676" };
-  const NAMES = { claude: "Claude Code", codex: "Codex", cursor: "Cursor", opencode: "Opencode" };
+  // The app's harness tints, so the timeline matches what Wefty shows.
+  const COLORS = { claude: "#e5732e", codex: "#3b8eea", cursor: "#9a6fd6", opencode: "#d9a520", antigravity: "#d05bb4" };
+  const NAMES = { claude: "Claude Code", codex: "Codex", cursor: "Cursor", opencode: "Opencode", antigravity: "Antigravity" };
+  /** Agents with a CLI, which a handoff can continue in (Cursor has none). */
+  const CONTINUABLE = ["claude", "codex", "opencode", "antigravity"];
   const PROJECTS = ["ios-app", "billing-service", "acme-api", "docs-site", "infra"];
   const TITLES = [
     "Offline sync conflict handling", "Proration for mid-cycle upgrades", "Per-IP rate limiting",
@@ -41,7 +44,7 @@
 
   function harness() {
     const r = rand();
-    return r < 0.52 ? "claude" : r < 0.82 ? "codex" : r < 0.92 ? "cursor" : "opencode";
+    return r < 0.44 ? "claude" : r < 0.7 ? "codex" : r < 0.79 ? "cursor" : r < 0.89 ? "opencode" : "antigravity";
   }
 
   /** Adds sessions and memories to a lane until it reaches `until` (world x). */
@@ -55,9 +58,11 @@
       lane.items.push(session);
       let end = session.end;
       // Some sessions stop at a usage limit and the same work continues in another agent.
-      if ((kind === "claude" || kind === "codex") && rand() < 0.34) {
+      if (CONTINUABLE.includes(kind) && rand() < 0.34) {
         session.limited = true;
-        const next = kind === "claude" ? "codex" : "claude";
+        // Usually Claude Code and Codex hand off to each other; any agent with a CLI can take over.
+        const others = CONTINUABLE.filter((agent) => agent !== kind);
+        const next = rand() < 0.6 ? (kind === "claude" ? "codex" : "claude") : pick(others);
         const after = {
           start: end + 40, end: end + 40 + between(150, 330), kind: next,
           title: session.title, continued: true, room: Infinity,
