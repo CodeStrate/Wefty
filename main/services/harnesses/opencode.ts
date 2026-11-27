@@ -1,9 +1,11 @@
+import { execFile } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+import { promisify } from "util";
 
 import type { MemorySummary, SessionSummary, TranscriptEntry } from "../../shared/types.js";
 import { readMarkdownMemory } from "../memory-files.js";
-import { OPENCODE_CONFIG_DIR, OPENCODE_DATA_DIR } from "../platform.js";
+import { findExecutable, HOME, OPENCODE_CONFIG_DIR, OPENCODE_DATA_DIR } from "../platform.js";
 import {
   describeTool,
   isRecord,
@@ -19,6 +21,57 @@ import {
 import { MAX_ENTRY_CHARS, MAX_RESULT_CHARS } from "./limits.js";
 
 export { OPENCODE_CONFIG_DIR };
+
+const execFileAsync = promisify(execFile);
+const SAFE_SESSION_ID = /^[A-Za-z0-9_-]+$/;
+
+/** The opencode CLI, wherever its installers put it; null if it isn't installed. */
+function opencodeCli(): string | null {
+  return findExecutable("opencode", [
+    path.join(HOME, ".opencode", "bin"), // install script
+    "/opt/homebrew/bin", // Homebrew on Apple Silicon
+    "/usr/local/bin", // Homebrew on Intel, most Linux packages
+    path.join(HOME, ".local", "bin"),
+    path.join(HOME, ".bun", "bin"),
+    path.join(process.env.APPDATA ?? path.join(HOME, "AppData", "Roaming"), "npm"), // npm on Windows
+  ]);
+}
+
+/** Why an Opencode session can't be moved to the Trash from Wefty, or undefined if it can. */
+export function opencodeTrashBlocked(session: SessionSummary): string | undefined {
+  // Older opencode spreads one session over many shared folders: leave those to opencode.
+  if (session.sourcePath !== OPENCODE_V2_DB) return "Update opencode to delete its sessions here";
+  return opencodeCli() ? undefined : "Install the opencode CLI to delete sessions here";
+}
+
+/** Runs the opencode CLI and returns what it printed. */
+async function runOpencode(args: string[]): Promise<string> {
+  const cli = opencodeCli();
+  if (!cli) throw new Error("The opencode CLI isn't installed");
+  const { stdout } = await execFileAsync(cli, args, {
+    maxBuffer: 256 * 1024 * 1024,
+    timeout: 60_000,
+    // npm installs opencode on Windows as a .cmd script, which only runs through a shell.
+    // Safe here: every argument is a fixed word or a validated session id.
+    shell: cli.endsWith(".cmd"),
+    windowsHide: true,
+  });
+  return stdout;
+}
+
+/** The whole session as JSON, in the form `opencode session import` reads back. */
+export async function exportOpencodeSession(id: string): Promise<string> {
+  if (!SAFE_SESSION_ID.test(id)) throw new Error(`Invalid session id: ${id}`);
+  const json = (await runOpencode(["session", "export", id])).trim();
+  JSON.parse(json); // Never delete a session without a backup that actually parses.
+  return json;
+}
+
+/** Deletes the session (and its subagent sessions) through opencode, which owns the database. */
+export async function deleteOpencodeSession(id: string): Promise<void> {
+  if (!SAFE_SESSION_ID.test(id)) throw new Error(`Invalid session id: ${id}`);
+  await runOpencode(["session", "delete", id]);
+}
 
 const MAX_MESSAGES = 1500;
 export const OPENCODE_V2_DB = path.join(OPENCODE_DATA_DIR, "opencode.db");
@@ -162,26 +215,16 @@ async function readOpencodeV2Db(session: SessionSummary): Promise<TranscriptEntr
       role,
       text: truncate(text.trim(), MAX_ENTRY_CHARS),
     });
-  let lastUser = "";
-  for (const row of rows) {
-    const parse = (raw: unknown) => {
-      try {
-        const value: unknown = JSON.parse(str(raw) ?? "null");
-        return isRecord(value) ? value : null;
-      } catch {
-        return null;
-      }
-    };
-    if (row.role === "user") {
-      // A prompt has no parts; its text is on the message. One row per prompt (the join adds none).
-      const message = parse(row.messageData);
-      const text = str(message?.text)?.trim();
-      if (text && str(row.message) !== lastUser) push("user", text);
-      lastUser = str(row.message) ?? "";
-      continue;
+  const parse = (raw: unknown) => {
+    try {
+      const value: unknown = JSON.parse(str(raw) ?? "null");
+      return isRecord(value) ? value : null;
+    } catch {
+      return null;
     }
-    const part = parse(row.data);
-    if (!part) continue;
+  };
+  /** One assistant part: text becomes a reply, a tool call an entry with its output. */
+  const addPart = (part: Record<string, unknown>) => {
     if (part.type === "text" && str(part.text)?.trim()) push("assistant", str(part.text)!);
     else if (part.type === "tool") {
       const state = isRecord(part.state) ? part.state : {};
@@ -199,6 +242,30 @@ async function readOpencodeV2Db(session: SessionSummary): Promise<TranscriptEntr
       });
     }
     // "reasoning" parts are the model's private thinking, like Claude's: not shown.
+  };
+
+  // The join gives one row per part, so a message spans several rows; act once per message.
+  let current = "";
+  let inline = false;
+  for (const row of rows) {
+    const id = str(row.message) ?? "";
+    const first = id !== current;
+    current = id;
+    if (row.role === "user") {
+      // A prompt's text is on the message itself.
+      const text = str(parse(row.messageData)?.text)?.trim();
+      if (first && text) push("user", text);
+      continue;
+    }
+    if (first) {
+      // Live sessions keep parts in session_part; imported ones carry them inside the message.
+      const content = parse(row.messageData)?.content;
+      inline = Array.isArray(content) && content.length > 0;
+      if (inline) for (const part of content as unknown[]) if (isRecord(part)) addPart(part);
+    }
+    if (inline) continue;
+    const part = parse(row.data);
+    if (part) addPart(part);
   }
   return entries;
 }

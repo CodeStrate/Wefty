@@ -168,14 +168,20 @@ function TrashItemDialog({
 }) {
   const trash = useTrashItem();
   const description =
-    item.kind === "session"
-      ? `The session transcript will be moved to the ${TRASH} and can no longer be resumed until you restore it.`
-      : `${shortenPath(item.path, library.home)} will be moved to the ${TRASH}, so agents stop reading it. You can restore it from the ${TRASH}.`;
+    item.kind === "session" && item.harness === "opencode"
+      ? `Opencode keeps all sessions in one database, so Wefty saves a copy of this one to the ${TRASH}, then deletes it with opencode. To bring it back, run opencode session import on that copy.`
+      : item.kind === "session"
+        ? `The session transcript will be moved to the ${TRASH} and can no longer be resumed until you restore it.`
+        : `${shortenPath(item.path, library.home)} will be moved to the ${TRASH}, so agents stop reading it. You can restore it from the ${TRASH}.`;
 
   const handleConfirm = async () => {
     try {
-      await trash.mutateAsync({ id: item.id });
-      toast.success(`Moved ${quoted(item.title, 40)} to the ${TRASH}`);
+      const result = await trash.mutateAsync({ id: item.id });
+      toast.success(`Moved ${quoted(item.title, 40)} to the ${TRASH}`, {
+        description: result.note,
+        // A restore hint needs time to read.
+        duration: result.note ? 12_000 : undefined,
+      });
       onTrashed(item.id);
     } catch (error) {
       toast.error(`Couldn't move to the ${TRASH}: ${errorMessage(error)}`);

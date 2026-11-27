@@ -48,6 +48,8 @@ export interface SessionSummary {
   filesTouched: string[];
   sourcePath: string;
   resumeCommand: string | null;
+  /** Why Wefty can't move this session to the Trash, shown in its menu; absent when it can. */
+  trashBlocked?: string;
 }
 
 export type MemoryType = "instructions" | "memory" | "rules" | "generated";
@@ -124,6 +126,8 @@ export interface TrashResult {
   trashed: number;
   /** Paths that could not be moved to the trash (Trash / Recycle Bin). */
   failed: string[];
+  /** Extra detail for the confirmation, such as how to restore a backup copy. */
+  note?: string;
 }
 
 export interface MemoryDetail {

@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 
 import { app, ipcMain, logger, shell } from "../electron/runtime.js";
@@ -36,6 +37,9 @@ import { CURSOR_USER_DIR, readCursorSession, scanCursor } from "./harnesses/curs
 import {
   OPENCODE_CONFIG_DIR,
   opencodeStorageDir,
+  deleteOpencodeSession,
+  exportOpencodeSession,
+  opencodeTrashBlocked,
   readOpencodeSession,
   scanOpencode,
   OPENCODE_V2_DB,
@@ -130,6 +134,24 @@ export async function nearestExistingFolder(target: string): Promise<string> {
   return currentDir;
 }
 
+/**
+ * Why a session can't be moved to the Trash from Wefty, or undefined if it can. Claude Code and
+ * Codex keep one file per session; Opencode deletes through its own CLI (with a backup).
+ */
+function trashBlockedReason(session: SessionSummary): string | undefined {
+  switch (session.harness) {
+    case "claude-code":
+    case "codex":
+      return undefined;
+    case "opencode":
+      return opencodeTrashBlocked(session);
+    case "antigravity":
+      return "Antigravity can't delete a single conversation yet";
+    case "cursor":
+      return "Cursor keeps every chat in one database: delete it in Cursor";
+  }
+}
+
 async function buildSnapshot(): Promise<LibrarySnapshot> {
   const startedAt = Date.now();
   const errors: ScanError[] = [];
@@ -162,7 +184,10 @@ async function buildSnapshot(): Promise<LibrarySnapshot> {
   ];
 
   const changes = prefs.projectChanges;
-  for (const session of baseSessions) session.cwd = relocate(session.cwd, changes);
+  for (const session of baseSessions) {
+    session.cwd = relocate(session.cwd, changes);
+    session.trashBlocked = trashBlockedReason(session);
+  }
   for (const memory of [...claude.memories, ...opencode.memories, ...codex.memories])
     memory.cwd = relocate(memory.cwd, changes);
 
@@ -462,12 +487,50 @@ async function trashPaths(paths: string[]): Promise<TrashResult> {
   return { library: await refreshLibrary(), trashed, failed };
 }
 
+/**
+ * Opencode keeps all sessions in one database, so there's no file to move. Instead: export the
+ * session, put that copy in the Trash, and only then delete it through opencode. Restoring it is
+ * `opencode session import <copy>`.
+ */
+async function trashOpencodeSession(session: SessionSummary): Promise<TrashResult> {
+  const json = await exportOpencodeSession(session.nativeId);
+  const name = `Wefty - Opencode - ${
+    session.title
+      .replace(/[\\/:*?"<>|\r\n]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 60) || session.nativeId
+  }.json`;
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "wefty-"));
+  const copy = path.join(dir, name);
+  try {
+    await fs.promises.writeFile(copy, json);
+    // If the copy can't reach the Trash, stop here: nothing has been deleted yet.
+    await shell.trashItem(copy);
+  } finally {
+    await fs.promises.rm(dir, { recursive: true, force: true }).catch(() => undefined);
+  }
+  await deleteOpencodeSession(session.nativeId);
+  logger.info(
+    "library",
+    `Deleted Opencode session ${session.nativeId}; a copy is in the ${TRASH_NAME}`,
+  );
+  return {
+    library: await refreshLibrary(),
+    trashed: 1,
+    failed: [],
+    note: `A copy is in the ${TRASH_NAME} as “${name}”. To bring the session back, take that file out and run opencode session import on it.`,
+  };
+}
+
 export async function trashItem(id: string): Promise<TrashResult> {
   const library = await getLibrary();
   const item =
     library.sessions.find((session) => session.id === id) ??
     library.memories.find((memory) => memory.id === id);
   if (!item) throw new Error(`Item not found: ${id}`);
+  if (item.kind === "session" && item.trashBlocked) throw new Error(item.trashBlocked);
+  if (item.kind === "session" && item.harness === "opencode") return trashOpencodeSession(item);
   const result = await trashPaths(await trashPathsFor(item));
   if (result.trashed === 0) throw new Error(`Couldn't move ${item.title} to the ${TRASH_NAME}`);
   return result;

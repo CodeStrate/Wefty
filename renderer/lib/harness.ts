@@ -67,9 +67,15 @@ export function isVirtualPath(target: string): boolean {
 }
 
 /** Mirrors the backend: only one-file-per-session harnesses and writable memory files can be trashed. */
+/** Whether Wefty can move an item to the Trash (the library says why not, for sessions). */
 export function canTrash(item: LibraryItem): boolean {
   if (item.kind === "memory") return item.editable && !isVirtualPath(item.path);
-  return item.harness === "claude-code" || item.harness === "codex";
+  return !item.trashBlocked;
+}
+
+/** The reason shown under a disabled Move to Trash item. */
+export function trashBlockedReason(item: LibraryItem): string | undefined {
+  return item.kind === "session" ? item.trashBlocked : undefined;
 }
 
 export const MEMORY_TYPE_LABELS: Record<MemoryType, string> = {

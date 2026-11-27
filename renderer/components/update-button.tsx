@@ -32,10 +32,7 @@ export function UpdateButton() {
           className="relative"
         >
           <ArrowDownToLine />
-          <span
-            aria-hidden
-            className="absolute top-1 right-1 size-1.5 rounded-full bg-accent"
-          />
+          <span aria-hidden className="absolute top-1 right-1 size-1.5 rounded-full bg-accent" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
