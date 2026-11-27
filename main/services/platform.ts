@@ -8,6 +8,24 @@ import * as path from "path";
 
 export const HOME = os.homedir();
 
+/**
+ * Finds a command-line tool by name: in PATH, then in `extraDirs`. Apps started from the Dock,
+ * Finder, or Start menu don't inherit the shell's PATH, so tools installed by Homebrew or an
+ * installer script are often only found through `extraDirs`. Returns the full path, or null.
+ */
+export function findExecutable(name: string, extraDirs: string[] = []): string | null {
+  const names = process.platform === "win32" ? [`${name}.exe`, `${name}.cmd`] : [name];
+  const dirs = [...(process.env.PATH ?? "").split(path.delimiter), ...extraDirs];
+  for (const dir of dirs) {
+    if (!dir) continue;
+    for (const file of names) {
+      const candidate = path.join(dir, file);
+      if (fs.existsSync(candidate)) return candidate;
+    }
+  }
+  return null;
+}
+
 function onPath(name: string): boolean {
   // checks if a certain name (executable generally) is on PATH. (Win/Mac/Linux)
   // get path dirs split by delimiter (; on win32 or :) based on OS.

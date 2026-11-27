@@ -336,6 +336,7 @@ export function SessionDetailPane({
             <DropdownMenuItem
               icon="trash"
               disabled={!canTrash(session)}
+              sublabel={session.trashBlocked}
               onSelect={() => onRequestTrash(session)}
             >
               Move to {getOSLabel("trash")}…

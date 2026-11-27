@@ -1,9 +1,11 @@
+import { execFile } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+import { promisify } from "util";
 
 import type { MemorySummary, SessionSummary, TranscriptEntry } from "../../shared/types.js";
 import { readMarkdownMemory } from "../memory-files.js";
-import { OPENCODE_CONFIG_DIR, OPENCODE_DATA_DIR } from "../platform.js";
+import { findExecutable, HOME, OPENCODE_CONFIG_DIR, OPENCODE_DATA_DIR } from "../platform.js";
 import {
   describeTool,
   isRecord,
@@ -19,6 +21,57 @@ import {
 import { MAX_ENTRY_CHARS, MAX_RESULT_CHARS } from "./limits.js";
 
 export { OPENCODE_CONFIG_DIR };
+
+const execFileAsync = promisify(execFile);
+const SAFE_SESSION_ID = /^[A-Za-z0-9_-]+$/;
+
+/** The opencode CLI, wherever its installers put it; null if it isn't installed. */
+function opencodeCli(): string | null {
+  return findExecutable("opencode", [
+    path.join(HOME, ".opencode", "bin"), // install script
+    "/opt/homebrew/bin", // Homebrew on Apple Silicon
+    "/usr/local/bin", // Homebrew on Intel, most Linux packages
+    path.join(HOME, ".local", "bin"),
+    path.join(HOME, ".bun", "bin"),
+    path.join(process.env.APPDATA ?? path.join(HOME, "AppData", "Roaming"), "npm"), // npm on Windows
+  ]);
+}
+
+/** Why an Opencode session can't be moved to the Trash from Wefty, or undefined if it can. */
+export function opencodeTrashBlocked(session: SessionSummary): string | undefined {
+  // Older opencode spreads one session over many shared folders: leave those to opencode.
+  if (session.sourcePath !== OPENCODE_V2_DB) return "Update opencode to delete its sessions here";
+  return opencodeCli() ? undefined : "Install the opencode CLI to delete sessions here";
+}
+
+/** Runs the opencode CLI and returns what it printed. */
+async function runOpencode(args: string[]): Promise<string> {
+  const cli = opencodeCli();
+  if (!cli) throw new Error("The opencode CLI isn't installed");
+  const { stdout } = await execFileAsync(cli, args, {
+    maxBuffer: 256 * 1024 * 1024,
+    timeout: 60_000,
+    // npm installs opencode on Windows as a .cmd script, which only runs through a shell.
+    // Safe here: every argument is a fixed word or a validated session id.
+    shell: cli.endsWith(".cmd"),
+    windowsHide: true,
+  });
+  return stdout;
+}
+
+/** The whole session as JSON, in the form `opencode session import` reads back. */
+export async function exportOpencodeSession(id: string): Promise<string> {
+  if (!SAFE_SESSION_ID.test(id)) throw new Error(`Invalid session id: ${id}`);
+  const json = (await runOpencode(["session", "export", id])).trim();
+  JSON.parse(json); // Never delete a session without a backup that actually parses.
+  return json;
+}
+
+/** Deletes the session (and its subagent sessions) through opencode, which owns the database. */
+export async function deleteOpencodeSession(id: string): Promise<void> {
+  if (!SAFE_SESSION_ID.test(id)) throw new Error(`Invalid session id: ${id}`);
+  await runOpencode(["session", "delete", id]);
+}
 
 const MAX_MESSAGES = 1500;
 export const OPENCODE_V2_DB = path.join(OPENCODE_DATA_DIR, "opencode.db");

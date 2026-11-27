@@ -13,7 +13,7 @@ import {
 import type { LibraryItem, LibrarySnapshot } from "@main/shared/types";
 
 import { dateBucket, plural, relativeTime } from "../lib/format";
-import { MEMORY_TYPE_LABELS, canTrash } from "../lib/harness";
+import { MEMORY_TYPE_LABELS, canTrash, trashBlockedReason } from "../lib/harness";
 import { resumeSpec } from "../lib/resume";
 import { projectLabel } from "../lib/scope";
 import { useTerminals } from "../lib/terminal-context";
@@ -180,6 +180,7 @@ export function ListPane({
                     <ContextMenuItem
                       icon="trash"
                       disabled={!canTrash(item)}
+                      sublabel={trashBlockedReason(item)}
                       onSelect={() => onRequestTrash(item)}
                     >
                       Move to {getOSLabel("trash")}…
