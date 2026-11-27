@@ -38,6 +38,7 @@ import {
   opencodeStorageDir,
   readOpencodeSession,
   scanOpencode,
+  OPENCODE_V2_DB,
 } from "./harnesses/opencode.js";
 import { buildHandoff, handoffFileName } from "./handoff.js";
 import { scanProjectMemories } from "./memory-files.js";
@@ -71,19 +72,21 @@ async function settle<T>(
 }
 
 async function detectAvailability(): Promise<Record<HarnessId, boolean>> {
-  const [claude, codex, cursor, opencodeData, opencodeConfig, antigravityData] = await Promise.all([
-    pathExists(CLAUDE_ROOT),
-    pathExists(CODEX_ROOT),
-    pathExists(CURSOR_USER_DIR),
-    pathExists(opencodeStorageDir()),
-    pathExists(OPENCODE_CONFIG_DIR),
-    pathExists(ANTIGRAVITY_CLI_DIR),
-  ]);
+  const [claude, codex, cursor, opencodeData, opencodeV2Db, opencodeConfig, antigravityData] =
+    await Promise.all([
+      pathExists(CLAUDE_ROOT),
+      pathExists(CODEX_ROOT),
+      pathExists(CURSOR_USER_DIR),
+      pathExists(opencodeStorageDir()),
+      pathExists(OPENCODE_V2_DB),
+      pathExists(OPENCODE_CONFIG_DIR),
+      pathExists(ANTIGRAVITY_CLI_DIR),
+    ]);
   return {
     "claude-code": claude,
     codex,
     cursor,
-    opencode: opencodeData || opencodeConfig,
+    opencode: opencodeData || opencodeConfig || opencodeV2Db,
     antigravity: antigravityData,
   };
 }
@@ -556,6 +559,7 @@ function watchTargets(enabled: HarnessId[]): { dir: string; recursive: boolean }
     targets.push(...CODEX_SESSION_DIRS.map((dir) => ({ dir, recursive: true })));
   if (enabled.includes("opencode")) {
     targets.push({ dir: path.join(opencodeStorageDir(), "session"), recursive: true });
+    targets.push({ dir: path.dirname(OPENCODE_V2_DB), recursive: false });
   }
   if (enabled.includes("antigravity")) {
     // The index and history sit in the root; each conversation's step log lives under brain/.
