@@ -1,15 +1,11 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as readline from "readline";
-import { execFile } from "child_process";
-import { promisify } from "util";
 
-import { HOME, SQLITE_BINARY, isAbsolutePath } from "./platform.js";
+import { HOME, isAbsolutePath } from "./platform.js";
 
 export { HOME };
-import { pathToFileURL } from "url";
-
-const execFileAsync = promisify(execFile);
+import { DatabaseSync, type SQLInputValue } from "node:sqlite";
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -88,28 +84,23 @@ export function parseTimestamp(value: unknown): number {
   return 0;
 }
 
-export async function querySqlite(dbPath: string, sql: string): Promise<Record<string, unknown>[]> {
-  const { stdout } = await execFileAsync(SQLITE_BINARY, ["-readonly", "-json", dbPath, sql], {
-    maxBuffer: 64 * 1024 * 1024,
-    timeout: 20_000,
-  });
-  const trimmed = stdout.trim();
-  if (!trimmed) return [];
-  const parsed: unknown = JSON.parse(trimmed);
-  return Array.isArray(parsed) ? parsed.filter(isRecord) : [];
-}
-/**
- * querySqlite for a database another app keeps open, where a plain read-only open can fail.
- * Falls back to an immutable snapshot, which can miss writes that the app hasn't flushed yet.
+/** A read only query on SQLite using Node's built-in SQLite db so the harnesses which need it:
+ * like Cursor, Opencode, Antigravity wouldn't require sqlite cli on any OS.
+ * It opens and closes per call, values go in the ? params.
  */
-export async function querySqliteLive(
+export async function querySqlite(
   dbPath: string,
   sql: string,
+  ...sqlParams: SQLInputValue[]
 ): Promise<Record<string, unknown>[]> {
+  const db = new DatabaseSync(dbPath, { readOnly: true });
   try {
-    return await querySqlite(dbPath, sql);
-  } catch {
-    return querySqlite(`${pathToFileURL(dbPath).href}?immutable=1`, sql);
+    return db
+      .prepare(sql)
+      .all(...sqlParams)
+      .filter(isRecord);
+  } finally {
+    db.close();
   }
 }
 

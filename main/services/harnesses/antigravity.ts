@@ -17,13 +17,14 @@ import {
   oneLine,
   parseTimestamp,
   pathExists,
-  querySqliteLive,
+  querySqlite,
   readDirSafe,
   readJsonLines,
   statOrNull,
   str,
   truncate,
 } from "../util.js";
+import { MAX_ENTRIES, MAX_ENTRY_CHARS, MAX_RESULT_CHARS } from "./limits.js";
 
 export { ANTIGRAVITY_CLI_DIR };
 /** Antigravity's index of conversations, including a plain-text copy of each for its search. */
@@ -174,7 +175,7 @@ interface ListedConversation {
 
 /** The list from Antigravity's own index: best metadata, but needs the sqlite3 CLI. */
 async function listFromIndex(): Promise<ListedConversation[]> {
-  const rows = await querySqliteLive(SUMMARIES_DB, LIST_SQL);
+  const rows = await querySqlite(SUMMARIES_DB, LIST_SQL);
   return rows.flatMap((row) => {
     const id = str(row.id);
     if (!id || !SAFE_ID.test(id)) return [];
@@ -341,7 +342,7 @@ async function readTranscript(file: string): Promise<TranscriptEntry[]> {
 
 /** Fallback for conversations without a step log: the search index's plain-text chunks. */
 async function readFromIndex(id: string): Promise<TranscriptEntry[]> {
-  const rows = await querySqliteLive(
+  const rows = await querySqlite(
     SUMMARIES_DB,
     `select user_body as user, agent_body as agent from conversations_fts
      where conversation_id = '${id}' and chunk_index >= 0 order by chunk_index`,

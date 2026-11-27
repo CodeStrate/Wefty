@@ -129,13 +129,13 @@ Three processes, as in any Electron app:
 
 ### Scanning
 
-Each harness has its own reader (`main/services/harnesses/*`) that turns what's on disk into one data contract: sessions (`"<harness>:<nativeId>"`), memories (`"mem:<path>"`), and projects (by working folder). Only enabled harnesses are scanned and watched; the library rebuilds when agents write new files. SQLite stores (Cursor, Codex memories) are read through the `sqlite3` CLI in read-only mode, so there's no native database module.
+Each harness has its own reader (`main/services/harnesses/*`) that turns what's on disk into one data contract: sessions (`"<harness>:<nativeId>"`), memories (`"mem:<path>"`), and projects (by working folder). Only enabled harnesses are scanned and watched; the library rebuilds when agents write new files. SQLite stores (Cursor and Opencode sessions, Antigravity's conversation index, Codex memories) are read with Node's built-in node:sqlite in read-only mode, so there's no native database module or sqlite3 CLI to install.
 
 Claude Code encodes a project's path into its folder name lossily (`/`, `.`, and `_` all become `-`), so Wefty walks the filesystem to recover the real path.
 
 ### Terminal
 
-Each tab is a login shell (`$SHELL` on macOS/Linux, `%COMSPEC%` on Windows) in a PTY ([`node-pty`](https://github.com/microsoft/node-pty)), rendered with [xterm.js](https://xtermjs.org). Output is batched over IPC and replayed when a tab remounts, so switching tabs or hiding the panel keeps scrollback. The terminal follows the active theme's palette live.
+Each tab is a login shell (`$SHELL` on macOS/Linux, PowerShell 7 or else Windows PowerShell 5.1 on Windows) in a PTY ([`node-pty`](https://github.com/microsoft/node-pty)), rendered with [xterm.js](https://xtermjs.org). Output is batched over IPC and replayed when a tab remounts, so switching tabs or hiding the panel keeps scrollback. The terminal follows the active theme's palette live.
 
 ### Resume
 
