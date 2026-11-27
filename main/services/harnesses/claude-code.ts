@@ -4,7 +4,6 @@ import * as path from "path";
 import type { MemorySummary, SessionSummary, TranscriptEntry } from "../../shared/types.js";
 import { readMarkdownMemory } from "../memory-files.js";
 import {
-  HOME,
   StatCache,
   describeTool,
   isRecord,
@@ -17,19 +16,15 @@ import {
   str,
   stripSystemNoise,
   toolFilePath,
-  toolTextResult,
+  toolResultText,
   truncate,
 } from "../util.js";
+import { MAX_ENTRIES, MAX_ENTRY_CHARS, MAX_FILES_TOUCHED, MAX_RESULT_CHARS } from "./limits.js";
 
-export const CLAUDE_ROOT = path.join(HOME, ".claude");
+import { CLAUDE_ROOT } from "../platform.js";
+
+export { CLAUDE_ROOT };
 export const CLAUDE_PROJECTS_DIR = path.join(CLAUDE_ROOT, "projects");
-
-const MAX_FILES_TOUCHED = 40;
-const MAX_ENTRIES = 3000;
-const MAX_ENTRY_CHARS = 12_000;
-
-/** Tool call output kept per entry; enough for an error message and small enough for IPC. */
-const MAX_RESULT_CHARS = 1200;
 
 const summaryCache = new StatCache<SessionSummary | null>(4000);
 
@@ -266,12 +261,12 @@ export async function readClaudeSession(session: SessionSummary): Promise<Transc
     if (type === "user") {
       if (record.isMeta === true) return;
       // read tool results
-      if(Array.isArray(message.content)) {
+      if (Array.isArray(message.content)) {
         for (const part of message.content) {
           if (!isRecord(part) || part.type !== "tool_result") continue; // skip non tool result content
-          const tool = toolsById.get(str(part.tool_use_id) ?? "")
+          const tool = toolsById.get(str(part.tool_use_id) ?? "");
           if (!tool) continue;
-          tool.result = truncate(toolTextResult(part.content), MAX_RESULT_CHARS);
+          tool.result = truncate(toolResultText(part.content), MAX_RESULT_CHARS);
           tool.isError = part.is_error === true;
         }
       }
@@ -308,7 +303,7 @@ export async function readClaudeSession(session: SessionSummary): Promise<Transc
           role: "tool",
           toolName: str(part.name) ?? "Tool",
           text: describeTool(part.input, session.cwd),
-        }
+        };
         entries.push(tool);
         const toolId = str(part.id);
         if (toolId) toolsById.set(toolId, tool);

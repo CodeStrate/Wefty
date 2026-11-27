@@ -16,13 +16,13 @@ import {
 } from "../util.js";
 
 import { CURSOR_USER_DIR } from "../platform.js";
+import { MAX_ENTRY_CHARS } from "./limits.js";
 
 export { CURSOR_USER_DIR };
 const GLOBAL_DB = path.join(CURSOR_USER_DIR, "globalStorage", "state.vscdb");
 const WORKSPACES_DIR = path.join(CURSOR_USER_DIR, "workspaceStorage");
 
 const MAX_WORKSPACES = 400;
-const MAX_ENTRY_CHARS = 12_000;
 
 const LIST_SQL = `select substr(key, 14) as id,
   json_extract(value, '$.name') as name,

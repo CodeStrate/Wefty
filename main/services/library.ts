@@ -45,14 +45,8 @@ import { ANTIGRAVITY_CLI_DIR, isAbsolutePath, isInside, TRASH_NAME } from "./pla
 import { getPreferences, updatePreferences, type Preferences } from "./preferences.js";
 import { HOME, pathExists, statOrNull, writeFileAtomic } from "./util.js";
 import { readAntigravitySession, scanAntigravity } from "./harnesses/antigravity.js";
-
-const HARNESS_NAMES: Record<HarnessId, string> = {
-  "claude-code": "Claude Code",
-  codex: "Codex",
-  cursor: "Cursor",
-  opencode: "Opencode",
-  antigravity: "Antigravity",
-};
+import { MAX_ENTRIES } from "./harnesses/limits.js";
+import { HARNESS_NAMES } from "../shared/harnesses.js";
 
 const MAX_MEMORY_READ_BYTES = 2 * 1024 * 1024;
 const WATCH_DEBOUNCE_MS = 2500;
@@ -297,8 +291,6 @@ export async function getLibrary(force = false): Promise<LibrarySnapshot> {
   return scanLibrary();
 }
 
-const MAX_DETAIL_ENTRIES = 3000;
-
 export async function getSessionDetail(id: string): Promise<SessionDetail> {
   const library = await getLibrary();
   const session = library.sessions.find((candidate) => candidate.id === id);
@@ -323,9 +315,9 @@ export async function getSessionDetail(id: string): Promise<SessionDetail> {
   }
   return {
     session,
-    entries: entries.slice(0, MAX_DETAIL_ENTRIES),
+    entries: entries.slice(0, MAX_ENTRIES),
     totalEntries: entries.length,
-    truncated: entries.length >= MAX_DETAIL_ENTRIES,
+    truncated: entries.length >= MAX_ENTRIES,
   };
 }
 

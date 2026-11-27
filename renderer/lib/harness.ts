@@ -1,3 +1,4 @@
+import { HARNESS_NAMES } from "@main/shared/harnesses";
 import type { HarnessId, LibraryItem, MemoryType } from "@main/shared/types";
 
 export type BadgeColor =
@@ -30,11 +31,19 @@ export const HARNESS_ORDER: HarnessId[] = [
 ];
 
 export const HARNESS_STYLES: Record<HarnessId, HarnessStyle> = {
-  "claude-code": { name: "Claude Code", badge: "orange", color: "var(--wf-tint-orange)" },
-  codex: { name: "Codex", badge: "blue", color: "var(--wf-tint-blue)" },
-  cursor: { name: "Cursor", badge: "purple", color: "var(--wf-tint-purple)" },
-  opencode: { name: "Opencode", badge: "yellow", color: "var(--wf-tint-yellow)" },
-  antigravity: { name: "Antigravity", badge: "magenta", color: "var(--wf-tint-magenta)" },
+  "claude-code": {
+    name: HARNESS_NAMES["claude-code"],
+    badge: "orange",
+    color: "var(--wf-tint-orange)",
+  },
+  codex: { name: HARNESS_NAMES.codex, badge: "blue", color: "var(--wf-tint-blue)" },
+  cursor: { name: HARNESS_NAMES.cursor, badge: "purple", color: "var(--wf-tint-purple)" },
+  opencode: { name: HARNESS_NAMES.opencode, badge: "yellow", color: "var(--wf-tint-yellow)" },
+  antigravity: {
+    name: HARNESS_NAMES.antigravity,
+    badge: "magenta",
+    color: "var(--wf-tint-magenta)",
+  },
 };
 
 export const SHARED_STYLE: HarnessStyle = {

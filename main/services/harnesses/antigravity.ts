@@ -32,10 +32,6 @@ const BRAIN_DIR = path.join(ANTIGRAVITY_CLI_DIR, "brain");
 const ANNOTATIONS_DIR = path.join(ANTIGRAVITY_CLI_DIR, "annotations");
 const HISTORY_FILE = path.join(ANTIGRAVITY_CLI_DIR, "history.jsonl");
 
-const MAX_ENTRIES = 3000;
-const MAX_ENTRY_CHARS = 12_000;
-/** Tool output kept per entry: enough for an error message, small enough for IPC. */
-const MAX_RESULT_CHARS = 1200;
 const SAFE_ID = /^[A-Za-z0-9_-]+$/;
 
 // Top-level conversations only: nested ones are an agent's own subagents.

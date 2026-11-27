@@ -4,7 +4,6 @@ import * as path from "path";
 import type { MemorySummary, SessionSummary, TranscriptEntry } from "../../shared/types.js";
 import { readMarkdownMemory } from "../memory-files.js";
 import {
-  HOME,
   StatCache,
   assertSafeId,
   describeTool,
@@ -18,21 +17,18 @@ import {
   shellQuote,
   str,
   truncate,
-  toolTextResult,
+  toolResultText,
 } from "../util.js";
+import { MAX_ENTRIES, MAX_ENTRY_CHARS, MAX_FILES_TOUCHED, MAX_RESULT_CHARS } from "./limits.js";
 
-export const CODEX_ROOT = path.join(HOME, ".codex");
+import { CODEX_ROOT } from "../platform.js";
+
+export { CODEX_ROOT };
 export const CODEX_SESSION_DIRS = [
   path.join(CODEX_ROOT, "sessions"),
   path.join(CODEX_ROOT, "archived_sessions"),
 ];
 
-const MAX_FILES_TOUCHED = 40;
-const MAX_ENTRIES = 3000;
-const MAX_ENTRY_CHARS = 12_000;
-
-/** Same as claude */
-const MAX_RESULT_CHARS = 1200;
 const CODEX_MEMORY_PREFIX = "codex-memory:";
 
 const summaryCache = new StatCache<SessionSummary | null>(4000);
@@ -294,36 +290,34 @@ export async function readCodexSession(session: SessionSummary): Promise<Transcr
         }
       }
       const tool: TranscriptEntry = {
-          id: String(entries.length),
-          role: "tool",
-          toolName: str(payload.name) ?? "Tool",
-          text: describeTool(args, session.cwd),
-        }
-        entries.push(tool);
-        const callId = str(payload.call_id);
-        if (callId) toolByCall.set(callId, tool);
-
+        id: String(entries.length),
+        role: "tool",
+        toolName: str(payload.name) ?? "Tool",
+        text: describeTool(args, session.cwd),
+      };
+      entries.push(tool);
+      const callId = str(payload.call_id);
+      if (callId) toolByCall.set(callId, tool);
     } else if (payload.type === "custom_tool_call") {
       const input = typeof payload.input === "string" ? payload.input : "";
       const touched = patchFiles(input, null);
-      
-      const tool: TranscriptEntry = {
-          id: String(entries.length),
-          role: "tool",
-          toolName: str(payload.name) ?? "Tool",
-          text: touched.length ? touched.join(", ") : oneLine(input, 200),
-        }
-        entries.push(tool);
-        const callId = str(payload.call_id);
-        if (callId) toolByCall.set(callId, tool);
 
+      const tool: TranscriptEntry = {
+        id: String(entries.length),
+        role: "tool",
+        toolName: str(payload.name) ?? "Tool",
+        text: touched.length ? touched.join(", ") : oneLine(input, 200),
+      };
+      entries.push(tool);
+      const callId = str(payload.call_id);
+      if (callId) toolByCall.set(callId, tool);
     } else if (
       payload.type === "function_call_output" ||
       payload.type === "custom_tool_call_output"
     ) {
       // A string of function calls; a list of {type : "input_text", text} for custom tools.
       const tool = toolByCall.get(str(payload.call_id) ?? "");
-      if (tool) tool.result = truncate(toolTextResult(payload.output), MAX_RESULT_CHARS)
+      if (tool) tool.result = truncate(toolResultText(payload.output), MAX_RESULT_CHARS);
     }
   });
   return entries;

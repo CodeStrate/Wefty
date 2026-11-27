@@ -7,7 +7,6 @@ import * as os from "os";
 import * as path from "path";
 
 export const HOME = os.homedir();
-export const ANTIGRAVITY_CLI_DIR = path.join(HOME, ".gemini", "antigravity-cli");
 
 function onPath(name: string): boolean {
   // checks if a certain name (executable generally) is on PATH. (Win/Mac/Linux)
@@ -30,14 +29,21 @@ function userConfigRoot(): string {
   }
 }
 
-/** Cursor's VS Code-style user folder (holds `globalStorage/state.vscdb`). */
-export const CURSOR_USER_DIR = path.join(userConfigRoot(), "Cursor", "User");
-
-/** Opencode follows XDG on every platform. */
+/** XDG data folder; Opencode uses it on every platform, Windows included. */
 export const XDG_DATA_HOME = process.env.XDG_DATA_HOME || path.join(HOME, ".local", "share");
 
-/** The sqlite3 CLI ships with macOS; elsewhere it must be on PATH. */
-export const SQLITE_BINARY = process.platform === "darwin" ? "/usr/bin/sqlite3" : "sqlite3";
+// --- Where each harness keeps its data ------------------------------------------
+// Only the roots live here; paths inside a harness's folder stay in that harness's reader.
+
+export const CLAUDE_ROOT = path.join(HOME, ".claude");
+export const CODEX_ROOT = path.join(HOME, ".codex");
+/** Cursor's VS Code-style user folder (holds `globalStorage/state.vscdb`). */
+export const CURSOR_USER_DIR = path.join(userConfigRoot(), "Cursor", "User");
+/** Opencode's data (sessions) and config; both follow XDG on every platform. */
+export const OPENCODE_DATA_DIR = path.join(XDG_DATA_HOME, "opencode");
+export const OPENCODE_CONFIG_DIR = path.join(HOME, ".config", "opencode");
+/** The Antigravity CLI (`agy`); the IDE uses a sibling folder, ~/.gemini/antigravity. */
+export const ANTIGRAVITY_CLI_DIR = path.join(HOME, ".gemini", "antigravity-cli");
 
 /** The user's login shell, used for embedded terminals. */
 /** On Windows it defaults to Powershell 5.1 but can be overridden by Powershell 7+ if installed. */
