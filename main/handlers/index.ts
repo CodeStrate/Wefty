@@ -7,6 +7,7 @@ import { getSettingsWindow, openSettingsWindow } from "../windows/settings-windo
 import { registerLibraryHandlers } from "./library.js";
 import { registerTerminalHandlers } from "./terminal.js";
 import { registerThemeHandlers } from "./theme.js";
+import { registerUpdateHandlers } from "./updates.js";
 
 export function registerHandlers(): void {
   ipcMain.handle("window:openSettings", async () => {
@@ -25,6 +26,9 @@ export function registerHandlers(): void {
 
   // Light / dark / system appearance
   registerThemeHandlers();
+
+  // The daily check for a newer release
+  registerUpdateHandlers();
 
   logger.info("handlers", "IPC handlers registered");
 }

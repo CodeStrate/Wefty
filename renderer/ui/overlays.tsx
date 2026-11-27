@@ -1,5 +1,6 @@
 import { useState, type ComponentProps, type ReactNode } from "react";
 import {
+  ArrowDownToLine,
   ChevronRight,
   CircleArrowRight,
   CircleMinus,
@@ -10,6 +11,7 @@ import {
   Pencil,
   Play,
   Settings,
+  Sparkles,
   SquareTerminal,
   TextCursorInput,
   Trash2,
@@ -36,6 +38,7 @@ export { toast } from "sonner";
 
 /** Menu items name their icon with SF Symbol names; mapped to Lucide here. */
 const MENU_ICONS: Record<string, LucideIcon> = {
+  "arrow.down.to.line": ArrowDownToLine,
   "arrow.right.circle": CircleArrowRight,
   "doc.on.clipboard": ClipboardCopy,
   "doc.on.doc": Copy,
@@ -45,6 +48,7 @@ const MENU_ICONS: Record<string, LucideIcon> = {
   "minus.circle": CircleMinus,
   pencil: Pencil,
   play: Play,
+  sparkles: Sparkles,
   terminal: SquareTerminal,
   "text.insert": TextCursorInput,
   trash: Trash2,

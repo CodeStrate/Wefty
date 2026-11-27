@@ -20,6 +20,10 @@ export interface Preferences {
   /** Colour theme preset, and whether it forces light or dark. */
   themeId: string;
   themeMode: ThemeMode;
+  /** Check GitHub releases for a newer Wefty once a day. */
+  checkForUpdates: boolean;
+  /** When the last update check ran, in ms, so it runs at most once a day. */
+  lastUpdateCheck: number;
   /** Remember project changes (either moved or renamed) */
   projectChanges: Record<string, string>;
 }
@@ -32,6 +36,8 @@ const DEFAULTS: Preferences = {
   themeId: "wefty",
   themeMode: "adaptive",
   projectChanges: {},
+  checkForUpdates: true,
+  lastUpdateCheck: 0,
 };
 
 let cached: Preferences | null = null;
@@ -82,6 +88,10 @@ function normalize(raw: unknown): Preferences {
     themeSource,
     themeId,
     themeMode,
+    // On unless turned off in Settings.
+    checkForUpdates: raw.checkForUpdates !== false,
+    lastUpdateCheck:
+      typeof raw.lastUpdateCheck === "number" && raw.lastUpdateCheck > 0 ? raw.lastUpdateCheck : 0,
   };
 }
 

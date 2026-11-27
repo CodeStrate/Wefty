@@ -25,7 +25,7 @@ It isn't an agent and it isn't a sync service. It reads and writes **your local 
 
 > **Alpha.** Builds are unsigned and Cursor, Opencode, and Antigravity support is untested. Expect rough edges, and [issues](https://github.com/CodeStrate/Wefty/issues) are very welcome.
 
-[Download](#download) · [Features](#features) · [Harnesses](#supported-harnesses) · [Build from Source](#build-from-source) · [How It Works](#how-it-works) · [Privacy](#privacy) · [Stack](#stack) · [Development](#development) · [Contributing](#contributing) · [Roadmap](#roadmap)
+[Download](#download) · [Updates](#updates) · [Features](#features) · [Harnesses](#supported-harnesses) · [Build from Source](#build-from-source) · [How It Works](#how-it-works) · [Privacy](#privacy) · [Stack](#stack) · [Development](#development) · [Contributing](#contributing) · [Roadmap](#roadmap)
 
 ## When Your Agent Stops Mid-Task
 
@@ -60,12 +60,26 @@ Grab the latest build from [Releases](https://github.com/CodeStrate/Wefty/releas
 
 | OS | File | First launch (unsigned alpha) |
 |---|---|---|
-| macOS (Apple Silicon / Intel) | `.dmg` or `.zip` | If macOS says the app "is damaged", run `xattr -cr /Applications/Wefty.app`, then open it |
+| macOS (Apple Silicon) | `.dmg` or `.zip` | If macOS says the app "is damaged", run `xattr -cr /Applications/Wefty.app`, then open it |
 | Windows 10/11 | `.exe` installer | SmartScreen: **More info → Run anyway** |
 | Ubuntu / Debian | `.deb` | `sudo apt install ./Wefty_*.deb` |
 | Any Linux | `.AppImage` | `chmod +x Wefty-*.AppImage && ./Wefty-*.AppImage` |
 
 The tour starts on first launch; replay it any time from **Help → Show Tour**.
+
+## Updates
+
+Wefty checks GitHub releases once a day for a newer version. When one is out, a download button with a small dot appears at the top of the sidebar; its menu has **Download** (the installer for your OS) and **What's New** (the release notes). **Wefty → Check for Updates…** on macOS, or **Help → Check for Updates…** on Windows and Linux, checks right away. **Settings → Updates** shows your version and turns the daily check off.
+
+To update, download the new version and install it over the old one. Your library, settings, and handoffs stay as they are.
+
+Limitations while Wefty is in alpha:
+
+- **No in-place updates yet.** Wefty tells you a new version is out and links the right installer, but you install it yourself. macOS doesn't let an unsigned app replace itself, so updating in place waits for signed builds (see the [Roadmap](#roadmap)); Windows and the AppImage will get it first.
+- **`.deb` installs** update by installing the new package (`sudo apt install ./Wefty_*.deb`), not from inside the app.
+- **Checks run while Wefty is open:** shortly after launch, then once a day. A closed app doesn't check, and the schedule can't be changed yet.
+- **It needs to reach GitHub.** Offline or behind a firewall, the daily check fails quietly; **Check for Updates…** says it couldn't connect.
+- **Builds from source don't check on their own**, since their version isn't a release. **Check for Updates…** still works.
 
 ## Features
 
@@ -157,7 +171,7 @@ Every colour is a CSS token (`--wf-*`). The default theme derives them from blac
 
 ## Privacy
 
-Wefty never sends your data anywhere. Everything is read from and written to local files. It only writes inside an agent's folders when you ask it to: saving a memory you edited, or moving something to the Trash / Recycle Bin after a confirmation.
+Wefty never sends your data anywhere, and updates come through GitHub releases: once a day it asks GitHub whether a newer version exists (turn this off in Settings), sending nothing about you or your library. Everything else is read from and written to local files. It only writes inside an agent's folders when you ask it to: saving a memory you edited, or moving something to the Trash / Recycle Bin after a confirmation.
 
 ## Stack
 
@@ -222,10 +236,13 @@ Bug reports: open an issue with your OS, the harness, what you did, and what you
 
 ## Roadmap
 
-- **Signed builds** - notarized macOS and signed Windows releases once signing certificates are in place, plus auto-update
+- **Signed builds** - notarized macOS and signed Windows releases once signing certificates are in place
+- **In-place updates** - download in the background and install on restart, instead of a download link: Windows and the AppImage first, macOS once builds are signed
+- **Update schedule** - choose how often Wefty checks for updates (daily, weekly, or never)
 - **Resume in another folder** - copy a Claude Code session into a different project and resume it there (confirmed write)
 - **Summary engines** - optional AI summaries for handoffs via `claude -p` / `codex exec`
-- **MCP server** - a stdio server so agents can search and read your library on demand (`search_context`, `get_handoff`, `read_memory`, …), with one-click install into harness configs
 - **Live terminal titles** - follow `cd` via the shell's title/OSC 7 sequences
 - **Native v2** - a Rust build with an Alacritty-backed terminal
 - **Web app sessions (opt-in)** - bring in your chats, projects, and memories from Claude, ChatGPT, Gemini, and other web apps, so they sit in the same library as your coding sessions
+- (Optional) **Intel Mac builds** - an x64 `.dmg` alongside the Apple Silicon one
+- (Optional) **MCP server** - a stdio server so agents can search and read your library on demand (`search_context`, `get_handoff`, `read_memory`, …), with one-click install into harness configs
