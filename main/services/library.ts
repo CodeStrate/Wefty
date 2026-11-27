@@ -497,6 +497,7 @@ async function trashOpencodeSession(session: SessionSummary): Promise<TrashResul
   const name = `Wefty - Opencode - ${
     session.title
       .replace(/[\\/:*?"<>|\r\n]+/g, " ")
+      .replace(/\s+/g, " ")
       .trim()
       .slice(0, 60) || session.nativeId
   }.json`;

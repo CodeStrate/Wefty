@@ -215,26 +215,16 @@ async function readOpencodeV2Db(session: SessionSummary): Promise<TranscriptEntr
       role,
       text: truncate(text.trim(), MAX_ENTRY_CHARS),
     });
-  let lastUser = "";
-  for (const row of rows) {
-    const parse = (raw: unknown) => {
-      try {
-        const value: unknown = JSON.parse(str(raw) ?? "null");
-        return isRecord(value) ? value : null;
-      } catch {
-        return null;
-      }
-    };
-    if (row.role === "user") {
-      // A prompt has no parts; its text is on the message. One row per prompt (the join adds none).
-      const message = parse(row.messageData);
-      const text = str(message?.text)?.trim();
-      if (text && str(row.message) !== lastUser) push("user", text);
-      lastUser = str(row.message) ?? "";
-      continue;
+  const parse = (raw: unknown) => {
+    try {
+      const value: unknown = JSON.parse(str(raw) ?? "null");
+      return isRecord(value) ? value : null;
+    } catch {
+      return null;
     }
-    const part = parse(row.data);
-    if (!part) continue;
+  };
+  /** One assistant part: text becomes a reply, a tool call an entry with its output. */
+  const addPart = (part: Record<string, unknown>) => {
     if (part.type === "text" && str(part.text)?.trim()) push("assistant", str(part.text)!);
     else if (part.type === "tool") {
       const state = isRecord(part.state) ? part.state : {};
@@ -252,6 +242,30 @@ async function readOpencodeV2Db(session: SessionSummary): Promise<TranscriptEntr
       });
     }
     // "reasoning" parts are the model's private thinking, like Claude's: not shown.
+  };
+
+  // The join gives one row per part, so a message spans several rows; act once per message.
+  let current = "";
+  let inline = false;
+  for (const row of rows) {
+    const id = str(row.message) ?? "";
+    const first = id !== current;
+    current = id;
+    if (row.role === "user") {
+      // A prompt's text is on the message itself.
+      const text = str(parse(row.messageData)?.text)?.trim();
+      if (first && text) push("user", text);
+      continue;
+    }
+    if (first) {
+      // Live sessions keep parts in session_part; imported ones carry them inside the message.
+      const content = parse(row.messageData)?.content;
+      inline = Array.isArray(content) && content.length > 0;
+      if (inline) for (const part of content as unknown[]) if (isRecord(part)) addPart(part);
+    }
+    if (inline) continue;
+    const part = parse(row.data);
+    if (part) addPart(part);
   }
   return entries;
 }
