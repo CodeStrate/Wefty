@@ -60,7 +60,7 @@ Grab the latest build from [Releases](https://github.com/CodeStrate/Wefty/releas
 
 | OS | File | First launch (unsigned alpha) |
 |---|---|---|
-| macOS (Apple Silicon) | `.dmg` or `.zip` | If macOS says the app "is damaged", run `xattr -cr /Applications/Wefty.app`, then open it |
+| macOS (Apple Silicon) | `.dmg` or `.zip` | Open it once, then **System Settings → Privacy & Security → Open Anyway**. Builds before 0.2.0 said "damaged" instead: run `xattr -cr /Applications/Wefty.app` |
 | Windows 10/11 | `.exe` installer | SmartScreen: **More info → Run anyway** |
 | Ubuntu / Debian | `.deb` | `sudo apt install ./Wefty_*.deb` |
 | Any Linux | `.AppImage` | `chmod +x Wefty-*.AppImage && ./Wefty-*.AppImage` |
